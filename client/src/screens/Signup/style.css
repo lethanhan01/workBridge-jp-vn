@@ -1,0 +1,197 @@
+/* Reset CSS */
+.signup-page, .signup-page * {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: "Inter", sans-serif;
+}
+
+.signup-page {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  width: 100%;
+  background: linear-gradient(117deg, #eef7f7 0%, #fff9e9 100%);
+  padding: 40px 20px;
+}
+
+/* Header Section */
+.signup-page .header-section {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.signup-page .header-section h1 {
+  color: #1a2b4a;
+  font-size: 32px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.signup-page .header-section p {
+  color: #64748b;
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+/* Signup Card */
+.signup-page .card {
+  background: #ffffff;
+  width: 100%;
+  max-width: 480px; /* Độ rộng lớn hơn card login một chút */
+  padding: 40px;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.signup-page .card-title-group h2 {
+  color: #1a2b4a;
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.signup-page .card-title-group p {
+  color: #64748b;
+  font-size: 13px;
+}
+
+/* Form & Inputs */
+.signup-page .signup-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px; /* Khoảng cách giữa các ô nhập liệu */
+}
+
+.signup-page .input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.signup-page .input-group label {
+  color: #1a2b4a;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.signup-page .input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.signup-page .input-wrapper input,
+.signup-page .input-wrapper select {
+  width: 100%;
+  height: 42px;
+  background: #f5f7fa;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0 12px 0 40px; /* Chừa chỗ cho icon bên trái */
+  font-size: 13px;
+  outline: none;
+  transition: all 0.2s ease;
+  appearance: none; /* Xóa mũi tên mặc định của trình duyệt cho select */
+}
+
+.signup-page .input-wrapper input:focus,
+.signup-page .input-wrapper select:focus {
+  border-color: #4a9d9c;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(74, 157, 156, 0.1);
+}
+
+/* Icon bên trái */
+.signup-page .input-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  opacity: 0.6;
+}
+
+/* Icon mũi tên bên phải cho Select */
+.signup-page .input-icon-right {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 14px;
+  pointer-events: none; /* Click xuyên qua icon vào select */
+  opacity: 0.5;
+}
+
+/* Nút Đăng ký */
+.signup-page .signup-btn {
+  width: 100%;
+  height: 46px;
+  background: #1a2b4a;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: background 0.2s;
+}
+
+.signup-page .signup-btn:hover {
+  background: #0d1a30;
+}
+
+/* Card Footer */
+.signup-page .card-footer {
+  text-align: center;
+  font-size: 13px;
+  color: #64748b;
+  border-top: 1px solid #f1f5f9;
+  padding-top: 20px;
+}
+
+.signup-page .login-link {
+  color: #155dfc;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.signup-page .login-link:hover {
+  text-decoration: underline;
+}
+/* Thông báo lỗi (Mục 11-17) */
+.error-msg {
+  color: #d93025; /* Màu đỏ cảnh báo chuẩn */
+  font-size: 11px;
+  margin-top: 4px;
+  display: block;
+  text-align: left;
+  font-weight: 500;
+}
+
+/* Hiệu ứng ô input khi có lỗi */
+.input-error {
+  border: 1px solid #d93025 !important;
+  background-color: #fff1f0 !important;
+}
+
+.input-error:focus {
+  box-shadow: 0 0 0 3px rgba(217, 48, 37, 0.1) !important;
+}
+
+/* Tinh chỉnh Dropdown (Mục 3, 4) */
+select {
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.input-icon-right {
+  pointer-events: none; /* Icon không chặn click vào select */
+}
