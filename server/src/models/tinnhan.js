@@ -1,35 +1,33 @@
 const supabase = require('../config/supabase');
 
-const TinNhanModel = {
+const tin_nhan = {
   // 1. READ: Lấy tin nhắn theo cuộc hội thoại (Có phân trang)
-  // Tương đương: SELECT * FROM TinNhan JOIN Nguoi_dung ... ORDER BY time ASC LIMIT 50
-  getByConversation: async (ma_cuoc_hoi_thoai, limit = 50, offset = 0) => {
+  get_by_conversation: async (ma_cuoc_hoi_thoai, limit = 50, offset = 0) => {
     const { data, error } = await supabase
-      .from('TinNhan')
+      .from('tin_nhan')
       .select(`
         *,
-        Nguoi_dung (
+        nguoi_dung (
           ma_nguoi_dung,
           ten
         )
       `)
       .eq('ma_cuoc_hoi_thoai', ma_cuoc_hoi_thoai)
-      .order('time', { ascending: true })
-      .range(offset, offset + limit - 1); // Giúp tải tin nhắn dần dần (Infinite Scroll)
+      .order('thoi_gian', { ascending: true })
+      .range(offset, offset + limit - 1);
     
     if (error) throw error;
     return data;
   },
 
   // 2. CREATE: Lưu tin nhắn mới
-  create: async (messageData) => {
-    // messageData: { ma_cuoc_hoi_thoai, ma_nguoi_gui, noi_dung, trang_thai }
+  create: async (message_data) => {
     const { data, error } = await supabase
-      .from('TinNhan')
-      .insert([messageData])
+      .from('tin_nhan')
+      .insert([message_data])
       .select(`
         *,
-        Nguoi_dung (ten)
+        nguoi_dung (ten)
       `)
       .single();
     
@@ -38,9 +36,9 @@ const TinNhanModel = {
   },
 
   // 3. UPDATE: Cập nhật trạng thái tin nhắn (Ví dụ: Chuyển từ 'sent' sang 'seen')
-  updateStatus: async (ma_tin_nhan, trang_thai) => {
+  update_status: async (ma_tin_nhan, trang_thai) => {
     const { data, error } = await supabase
-      .from('TinNhan')
+      .from('tin_nhan')
       .update({ trang_thai })
       .eq('ma_tin_nhan', ma_tin_nhan)
       .select();
@@ -51,9 +49,8 @@ const TinNhanModel = {
 
   // 4. DELETE: Xóa tin nhắn (Thu hồi tin nhắn)
   delete: async (ma_tin_nhan, ma_nguoi_gui) => {
-    // Thêm điều kiện ma_nguoi_gui để đảm bảo chỉ người gửi mới xóa được tin của họ
     const { error } = await supabase
-      .from('TinNhan')
+      .from('tin_nhan')
       .delete()
       .match({ ma_tin_nhan, ma_nguoi_gui });
     
@@ -61,13 +58,13 @@ const TinNhanModel = {
     return { success: true };
   },
 
-  // 5. READ: Lấy tin nhắn mới nhất của một cuộc hội thoại (Để hiện ở danh sách chat)
-  getLatestMessage: async (ma_cuoc_hoi_thoai) => {
+  // 5. READ: Lấy tin nhắn mới nhất của một cuộc hội thoại
+  get_latest_message: async (ma_cuoc_hoi_thoai) => {
     const { data, error } = await supabase
-      .from('TinNhan')
+      .from('tin_nhan')
       .select('*')
       .eq('ma_cuoc_hoi_thoai', ma_cuoc_hoi_thoai)
-      .order('time', { ascending: false })
+      .order('thoi_gian', { ascending: false })
       .limit(1)
       .maybeSingle();
     
@@ -76,4 +73,4 @@ const TinNhanModel = {
   }
 };
 
-module.exports = TinNhanModel;
+module.exports = tin_nhan;
