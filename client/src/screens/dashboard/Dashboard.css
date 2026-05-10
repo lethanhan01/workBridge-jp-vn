@@ -1,16 +1,3 @@
-/* ===== FULL SIZE GLOBAL ===== */
-/* Thêm vào đây để đảm bảo toàn màn hình.
-   Nếu đã có trong index.css hoặc App.css thì không cần */
-html,
-body,
-#root {
-  height: 100%;
-  width: 100%;
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
-}
-
 /* ===== DASHBOARD LAYOUT ===== */
 .dashboard {
   display: flex;
@@ -18,6 +5,7 @@ body,
   height: 100vh;
   background: #fff;
   overflow: hidden;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 .dashboard__overlay {
@@ -39,6 +27,7 @@ body,
   color: #fff;
   display: flex;
   flex-direction: column;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   transition: transform 0.3s ease;
   transform: translateX(-100%);
   z-index: 30;

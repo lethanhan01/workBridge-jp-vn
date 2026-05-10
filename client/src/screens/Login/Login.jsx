@@ -27,8 +27,7 @@ export const Login = () => {
         localStorage.setItem("user", JSON.stringify(result.user));
         
         alert(`Đăng nhập thành công! Chào mừng ${result.user.name}`);
-        // Chuyển hướng (tạm thời về trang chủ, sau này có thể là dashboard)
-        // navigate("/dashboard"); 
+        navigate("/dashboard");
       } else {
         setErrorMsg(result.message);
       }

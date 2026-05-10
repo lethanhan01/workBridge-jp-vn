@@ -506,6 +506,10 @@
 /* ============================================================
    SUGGESTION SIDEBAR
    ============================================================ */
+/* ============================================================
+   RIGHT SUGGESTION SIDEBAR — slide animation
+   Trên desktop: luôn render, dùng translateX để ẩn/hiện
+   ============================================================ */
 .chat-suggestion-sidebar {
   width: 320px;
   min-width: 320px;
@@ -516,7 +520,16 @@
   flex-direction: column;
   flex-shrink: 0;
   position: relative;
-  transition: transform 0.25s ease;
+  /* Đóng: trượt sang phải hoàn toàn */
+  transform: translateX(100%);
+  margin-left: -320px;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.chat-suggestion-sidebar.open {
+  transform: translateX(0);
+  margin-left: 0;
 }
 
 .chat-suggestion-toggle {
@@ -540,6 +553,14 @@
 
 .chat-suggestion-toggle:hover {
   background: #249a88;
+}
+
+/* Icon xoay khi sidebar mở */
+.chat-suggestion-toggle-icon {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.chat-suggestion-toggle-icon.flipped {
+  transform: rotate(180deg);
 }
 
 /* Suggestion Header */
@@ -666,8 +687,10 @@
     top: 0;
     height: 100%;
     transform: translateX(100%);
+    margin-left: 0;
     z-index: 40;
     box-shadow: -4px 0 20px rgba(0, 0, 0, 0.12);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .chat-suggestion-sidebar.open {
@@ -733,4 +756,102 @@
 .chat-sidebar-nav::-webkit-scrollbar-thumb {
   background: #d1d5db;
   border-radius: 4px;
+}
+
+/* ============================================================
+   FILE ATTACHMENT STRIP
+   ============================================================ */
+.chat-attach-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 0 12px;
+}
+
+.chat-attach-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+  max-width: 160px;
+}
+
+.chat-attach-thumb {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  display: block;
+  border-radius: 6px;
+}
+
+.chat-attach-file {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  color: #374151;
+}
+
+.chat-attach-name {
+  font-size: 12px;
+  max-width: 100px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chat-attach-remove {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.5);
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: background 0.15s ease;
+}
+
+.chat-attach-remove:hover {
+  background: rgba(0,0,0,0.75);
+}
+
+/* File chips inside message bubbles */
+.chat-file-preview {
+  margin-top: 6px;
+}
+
+.chat-file-img {
+  max-width: 240px;
+  max-height: 180px;
+  border-radius: 8px;
+  object-fit: cover;
+  display: block;
+}
+
+.chat-file-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #374151;
+}
+
+.chat-file-chip--me {
+  background: rgba(255,255,255,0.2);
+  border-color: rgba(255,255,255,0.3);
+  color: #fff;
 }
