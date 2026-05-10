@@ -1,10 +1,10 @@
 const supabase = require('../config/supabase');
 
-const tin_nhan = {
+const tinnhan = {
   // 1. READ: Lấy tin nhắn theo cuộc hội thoại (Có phân trang)
   get_by_conversation: async (ma_cuoc_hoi_thoai, limit = 50, offset = 0) => {
     const { data, error } = await supabase
-      .from('tin_nhan')
+      .from('tinnhan')
       .select(`
         *,
         nguoi_dung (
@@ -23,7 +23,7 @@ const tin_nhan = {
   // 2. CREATE: Lưu tin nhắn mới
   create: async (message_data) => {
     const { data, error } = await supabase
-      .from('tin_nhan')
+      .from('tinnhan')
       .insert([message_data])
       .select(`
         *,
@@ -38,7 +38,7 @@ const tin_nhan = {
   // 3. UPDATE: Cập nhật trạng thái tin nhắn (Ví dụ: Chuyển từ 'sent' sang 'seen')
   update_status: async (ma_tin_nhan, trang_thai) => {
     const { data, error } = await supabase
-      .from('tin_nhan')
+      .from('tinnhan')
       .update({ trang_thai })
       .eq('ma_tin_nhan', ma_tin_nhan)
       .select();
@@ -50,7 +50,7 @@ const tin_nhan = {
   // 4. DELETE: Xóa tin nhắn (Thu hồi tin nhắn)
   delete: async (ma_tin_nhan, ma_nguoi_gui) => {
     const { error } = await supabase
-      .from('tin_nhan')
+      .from('tinnhan')
       .delete()
       .match({ ma_tin_nhan, ma_nguoi_gui });
     
@@ -73,4 +73,4 @@ const tin_nhan = {
   }
 };
 
-module.exports = tin_nhan;
+module.exports = tinnhan;
