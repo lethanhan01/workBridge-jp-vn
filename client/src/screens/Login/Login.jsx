@@ -1,13 +1,41 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useState } from "react";
 import "./style.css";
 
 export const Login = () => {
-  const handleSubmit = (e) => {
+  const navigate = useNavigate();
+  const [errorMsg, setErrorMsg] = useState("");
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
     const data = Object.fromEntries(formData);
-    console.log("Dữ liệu đăng nhập:", data);
-    // Xử lý logic đăng nhập tại đây
+    
+    try {
+      const response = await fetch("http://localhost:3000/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        console.log("Đăng nhập thành công:", result);
+        // Lưu token vào localStorage
+        localStorage.setItem("token", result.token);
+        localStorage.setItem("user", JSON.stringify(result.user));
+        
+        alert(`Đăng nhập thành công! Chào mừng ${result.user.name}`);
+        // Chuyển hướng (tạm thời về trang chủ, sau này có thể là dashboard)
+        // navigate("/dashboard"); 
+      } else {
+        setErrorMsg(result.message);
+      }
+    } catch (error) {
+      console.error("Lỗi khi đăng nhập:", error);
+      setErrorMsg("Lỗi kết nối máy chủ! Vui lòng thử lại sau.");
+    }
   };
 
   return (
@@ -31,6 +59,12 @@ export const Login = () => {
           <p className="hint-jp">💡 ヒント: 管理者としてログインするには、メールに「admin」を含めてください</p>
           <p className="hint-vn">Gợi ý: Để đăng nhập với quyền admin, sử dụng email có chứa "admin"</p>
         </div>
+
+        {errorMsg && (
+          <div className="error-box" style={{ color: 'red', marginBottom: '15px', textAlign: 'center', fontSize: '14px', backgroundColor: '#ffeaea', padding: '10px', borderRadius: '5px' }}>
+            {errorMsg}
+          </div>
+        )}
 
         {/* Sử dụng thẻ form để trình duyệt hỗ trợ gợi ý và lưu mật khẩu */}
         <form className="login-form" onSubmit={handleSubmit}>

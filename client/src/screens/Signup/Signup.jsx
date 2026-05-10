@@ -55,7 +55,7 @@ export const Signup = () => {
     return newErrors;
   };
 
-  const handleSignup = (e) => {
+  const handleSignup = async (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
     const data = Object.fromEntries(formData);
@@ -66,9 +66,27 @@ export const Signup = () => {
       setErrors(validationErrors); // Hiển thị lỗi nếu có (Mục 10)
     } else {
       setErrors({});
-      console.log("Đăng ký thành công:", data);
-      alert("Đăng ký thành công! / 登録が完了しました！");
-      navigate("/login"); // Chuyển hướng sang Login (Mục 8)
+      try {
+        const response = await fetch("http://localhost:3000/api/auth/signup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+          console.log("Đăng ký thành công:", result);
+          alert(result.message);
+          navigate("/login"); // Chuyển hướng sang Login (Mục 8)
+        } else {
+          // Hiển thị lỗi từ server (ví dụ: email đã tồn tại)
+          setErrors({ email: result.message });
+        }
+      } catch (error) {
+        console.error("Lỗi khi đăng ký:", error);
+        alert("Lỗi kết nối máy chủ! Vui lòng thử lại sau.");
+      }
     }
   };
 
