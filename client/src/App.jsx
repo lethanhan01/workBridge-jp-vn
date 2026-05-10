@@ -1,25 +1,37 @@
-import { useState } from "react";
-import {Dashboard} from "./screens/dashboard";
-import {Chat} from "./screens/chat";
+import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom";
+import { Login } from "./screens/Login";
+import { Signup } from "./screens/Signup";
+import { Dashboard } from "./screens/Dashboard"; 
+import { Chat } from "./screens/Chat";
 import "./App.css";
 
+const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <Navigate to="/login" replace />,
+  },
+  {
+    path: "/login",
+    element: <Login />,
+  },
+  {
+    path: "/signup",
+    element: <Signup />,
+  },
+  {
+    path: "/dashboard",
+    element: <Dashboard />,
+  },
+  {
+    path: "/chat",
+    element: <Chat />,
+  },
+  {
+    path: "*",
+    element: <Navigate to="/login" />, 
+  },
+]);
+
 export default function App() {
-  const [screen, setScreen] = useState("dashboard"); // "dashboard" | "chat"
-  const [selectedContact, setSelectedContact] = useState(null);
-
-  const handleSelectContact = (contact) => {
-    setSelectedContact(contact);
-    setScreen("chat");
-  };
-
-  const handleBack = () => {
-    setScreen("dashboard");
-    setSelectedContact(null);
-  };
-
-  if (screen === "chat") {
-    return <Chat contact={selectedContact} onBack={handleBack} />;
-  }
-
-  return <Dashboard onSelectContact={handleSelectContact} />;
+  return <RouterProvider router={router} />;
 }
