@@ -3,7 +3,8 @@ import { Login } from "./screens/Login";
 import { Signup } from "./screens/Signup";
 import { Dashboard } from "./screens/Dashboard"; 
 import { Chat } from "./screens/Chat";
-import "./App.css";
+import { Dictionary } from "./screens/Dictionary";
+import { UserProfile } from "./screens/UserProfile";
 
 const router = createBrowserRouter([
   {
@@ -25,6 +26,14 @@ const router = createBrowserRouter([
   {
     path: "/chat",
     element: <Chat />,
+  },
+  {
+    path: "/dictionary",
+    element: <Dictionary />,
+  },
+  {
+    path: "/profile",
+    element: <UserProfile />,
   },
   {
     path: "*",

@@ -15,6 +15,7 @@
   width: 100%;
   background: linear-gradient(117deg, #eef7f7 0%, #fff9e9 100%);
   padding: 20px;
+  overflow-y: auto;
 }
 
 /* Header Section */

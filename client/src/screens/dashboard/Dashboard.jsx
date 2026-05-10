@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './Dashboard.css';
 
 const contacts = [
@@ -55,6 +56,7 @@ const contacts = [
 ];
 
 const Dashboard = ({ onSelectContact }) => {
+  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeNav, setActiveNav] = useState('chat');
   const [search, setSearch] = useState('');
@@ -67,6 +69,13 @@ const Dashboard = ({ onSelectContact }) => {
 
   const handleContactClick = (contact) => {
     if (onSelectContact) onSelectContact(contact);
+    navigate('/chat');
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    navigate('/login');
   };
 
   return (
@@ -95,14 +104,14 @@ const Dashboard = ({ onSelectContact }) => {
           </button>
           <button
             className={`dashboard__nav-item ${activeNav === 'dictionary' ? 'dashboard__nav-item--active' : ''}`}
-            onClick={() => { setActiveNav('dictionary'); setSidebarOpen(false); }}
+            onClick={() => { setActiveNav('dictionary'); setSidebarOpen(false); navigate('/dictionary'); }}
           >
             <BookIcon />
             <span>辞書 / Từ điển</span>
           </button>
           <button
             className={`dashboard__nav-item ${activeNav === 'profile' ? 'dashboard__nav-item--active' : ''}`}
-            onClick={() => { setActiveNav('profile'); setSidebarOpen(false); }}
+            onClick={() => { setActiveNav('profile'); setSidebarOpen(false); navigate('/profile'); }}
           >
             <PersonIcon />
             <span>プロフィール / Hồ sơ</span>
@@ -110,7 +119,7 @@ const Dashboard = ({ onSelectContact }) => {
         </nav>
 
         <div className="dashboard__footer">
-          <button className="dashboard__logout">
+          <button className="dashboard__logout" onClick={handleLogout}>
             <LogoutIcon />
             <span>ログアウト / Đăng xuất</span>
           </button>
