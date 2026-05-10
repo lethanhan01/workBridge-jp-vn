@@ -1,30 +1,30 @@
 const supabase = require('../config/supabase');
 
-const NguoiDungModel = {
+const nguoi_dung = {
   // 1. READ: Lấy danh sách tất cả người dùng kèm tên vai trò
-  getAll: async () => {
+  get_all: async () => {
     const { data, error } = await supabase
-      .from('Nguoi_dung')
-      .select('*, Vai_tro(ten_vai_tro)');
+      .from('nguoi_dung')
+      .select('*, vai_tro(ten_vai_tro)');
     if (error) throw error;
     return data;
   },
 
   // 2. READ: Lấy chi tiết 1 người dùng theo UUID
-  getById: async (ma_nguoi_dung) => {
+  get_by_id: async (ma_nguoi_dung) => {
     const { data, error } = await supabase
-      .from('Nguoi_dung')
-      .select('*, Vai_tro(ten_vai_tro)')
+      .from('nguoi_dung')
+      .select('*, vai_tro(ten_vai_tro)')
       .eq('ma_nguoi_dung', ma_nguoi_dung)
       .single();
     if (error) throw error;
     return data;
   },
 
-  // 3. READ: Tìm người dùng bằng Email hoặc Tên đăng nhập (Dùng cho logic Đăng nhập)
-  getByAuthIdentifier: async (identifier) => {
+  // 3. READ: Tìm người dùng bằng Email hoặc Tên đăng nhập
+  get_by_auth_identifier: async (identifier) => {
     const { data, error } = await supabase
-      .from('Nguoi_dung')
+      .from('nguoi_dung')
       .select('*')
       .or(`email.eq.${identifier},ten_dang_nhap.eq.${identifier}`)
       .maybeSingle();
@@ -33,20 +33,20 @@ const NguoiDungModel = {
   },
 
   // 4. CREATE: Tạo người dùng mới
-  create: async (userData) => {
+  create: async (user_data) => {
     const { data, error } = await supabase
-      .from('Nguoi_dung')
-      .insert([userData])
+      .from('nguoi_dung')
+      .insert([user_data])
       .select();
     if (error) throw error;
     return data[0];
   },
 
-  // 5. UPDATE: Cập nhật thông tin (ví dụ đổi mật khẩu, đổi tên)
-  update: async (ma_nguoi_dung, updateData) => {
+  // 5. UPDATE: Cập nhật thông tin
+  update: async (ma_nguoi_dung, update_data) => {
     const { data, error } = await supabase
-      .from('Nguoi_dung')
-      .update(updateData)
+      .from('nguoi_dung')
+      .update(update_data)
       .eq('ma_nguoi_dung', ma_nguoi_dung)
       .select();
     if (error) throw error;
@@ -56,7 +56,7 @@ const NguoiDungModel = {
   // 6. DELETE: Xóa tài khoản người dùng
   delete: async (ma_nguoi_dung) => {
     const { error } = await supabase
-      .from('Nguoi_dung')
+      .from('nguoi_dung')
       .delete()
       .eq('ma_nguoi_dung', ma_nguoi_dung);
     if (error) throw error;
@@ -64,4 +64,4 @@ const NguoiDungModel = {
   }
 };
 
-module.exports = NguoiDungModel;
+module.exports = nguoi_dung;

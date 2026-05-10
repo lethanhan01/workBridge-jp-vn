@@ -1,10 +1,10 @@
 const supabase = require('../config/supabase');
 
-const TuChuyenNganhModel = {
+const tu_chuyen_nganh = {
   // 1. READ: Lấy toàn bộ danh sách từ vựng (Sắp xếp theo chuyên ngành)
-  getAll: async () => {
+  get_all: async () => {
     const { data, error } = await supabase
-      .from('Tu_chuyen_nganh')
+      .from('tu_chuyen_nganh')
       .select('*')
       .order('chuyen_nganh', { ascending: true });
     if (error) throw error;
@@ -12,9 +12,9 @@ const TuChuyenNganhModel = {
   },
 
   // 2. READ: Lấy chi tiết một từ theo ID
-  getById: async (ma_tu) => {
+  get_by_id: async (ma_tu) => {
     const { data, error } = await supabase
-      .from('Tu_chuyen_nganh')
+      .from('tu_chuyen_nganh')
       .select('*')
       .eq('ma_tu', ma_tu)
       .single();
@@ -23,10 +23,9 @@ const TuChuyenNganhModel = {
   },
 
   // 3. READ: Tìm kiếm nâng cao (Tìm trong Chuyên ngành, Tiếng Việt hoặc Tiếng Nhật)
-  // Tương đương: WHERE chuyen_nganh LIKE ... OR thuat_ngu_tieng_viet LIKE ... OR thuat_ngu_tieng_nhat LIKE ...
   search: async (query) => {
     const { data, error } = await supabase
-      .from('Tu_chuyen_nganh')
+      .from('tu_chuyen_nganh')
       .select('*')
       .or(`chuyen_nganh.ilike.%${query}%,thuat_ngu_tieng_viet.ilike.%${query}%,thuat_ngu_tieng_nhat.ilike.%${query}%`);
     if (error) throw error;
@@ -34,20 +33,20 @@ const TuChuyenNganhModel = {
   },
 
   // 4. CREATE: Thêm một hoặc nhiều từ mới
-  create: async (wordData) => {
+  create: async (word_data) => {
     const { data, error } = await supabase
-      .from('Tu_chuyen_nganh')
-      .insert(Array.isArray(wordData) ? wordData : [wordData])
+      .from('tu_chuyen_nganh')
+      .insert(Array.isArray(word_data) ? word_data : [word_data])
       .select();
     if (error) throw error;
     return data;
   },
 
   // 5. UPDATE: Cập nhật thông tin từ vựng
-  update: async (ma_tu, updateData) => {
+  update: async (ma_tu, update_data) => {
     const { data, error } = await supabase
-      .from('Tu_chuyen_nganh')
-      .update(updateData)
+      .from('tu_chuyen_nganh')
+      .update(update_data)
       .eq('ma_tu', ma_tu)
       .select();
     if (error) throw error;
@@ -57,7 +56,7 @@ const TuChuyenNganhModel = {
   // 6. DELETE: Xóa từ vựng khỏi hệ thống
   delete: async (ma_tu) => {
     const { error } = await supabase
-      .from('Tu_chuyen_nganh')
+      .from('tu_chuyen_nganh')
       .delete()
       .eq('ma_tu', ma_tu);
     if (error) throw error;
@@ -65,4 +64,4 @@ const TuChuyenNganhModel = {
   }
 };
 
-module.exports = TuChuyenNganhModel;
+module.exports = tu_chuyen_nganh;
