@@ -1,10 +1,12 @@
 import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom";
 import { Login } from "./screens/Login";
 import { Signup } from "./screens/Signup";
+import { Dashboard } from "./screens/Dashboard"; 
+import { Chat } from "./screens/Chat";
+import "./App.css";
 
 const router = createBrowserRouter([
   {
-    // Trang chủ mặc định sẽ tự động chuyển hướng về trang Login
     path: "/",
     element: <Navigate to="/login" replace />,
   },
@@ -17,12 +19,19 @@ const router = createBrowserRouter([
     element: <Signup />,
   },
   {
-    
+    path: "/dashboard",
+    element: <Dashboard />,
+  },
+  {
+    path: "/chat",
+    element: <Chat />,
+  },
+  {
     path: "*",
-    element: <Login />, 
+    element: <Navigate to="/login" />, 
   },
 ]);
 
-export const App = () => {
+export default function App() {
   return <RouterProvider router={router} />;
-};
+}
