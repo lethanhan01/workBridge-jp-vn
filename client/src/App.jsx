@@ -1,8 +1,8 @@
 import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom";
 import { Login } from "./screens/Login";
 import { Signup } from "./screens/Signup";
-import { Dashboard } from "./screens/Dashboard"; 
-import { Chat } from "./screens/Chat";
+import { Dashboard } from "./screens/dashboard";
+import { Chat } from "./screens/chat";
 import { Dictionary } from "./screens/Dictionary";
 import { UserProfile } from "./screens/UserProfile";
 
