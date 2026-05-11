@@ -1,84 +1,123 @@
 # workBridge-jp-vn
 
-`workBridge-jp-vn` là dự án web theo mô hình client/server, hướng tới việc kết nối thị trường việc làm và IT giữa Nhật Bản và Việt Nam. Repository hiện được tổ chức dạng monorepo, trong đó frontend và backend nằm ở hai thư mục riêng để dễ phát triển, kiểm thử và mở rộng độc lập.
+Monorepo web nhằm kết nối thị trường việc làm và IT giữa Nhật Bản và Việt Nam. **Frontend** (`client/`) và **backend** (`server/`) phát triển độc lập; giao tiếp qua HTTP API, Socket.IO và (tuỳ tính năng) Supabase — **không import code xuyên thư mục** giữa hai workspace.
+
+---
 
 ## Công nghệ chính
 
-- **Frontend:** React + Vite
-- **Backend:** Node.js + Express
-- **Template backend:** EJS
-- **Ngôn ngữ:** JavaScript
+| Lớp | Công nghệ |
+|-----|-----------|
+| Frontend | React 19, Vite 8, React Router 7, Socket.IO Client, Supabase JS (**anon key** trong browser) |
+| Backend | Node.js, Express (**ESM**), Socket.IO, JWT; persistence qua **Supabase JS** (service role, chỉ trên server) |
+| View backend | EJS (trang demo `/`) |
+| Kiểm thử backend | Vitest + Sequelize + SQLite in-memory — đối chiếu schema với [`server/src/models/`](server/src/models/) |
+| Ngôn ngữ | JavaScript |
 
-## Cấu trúc thư mục
+Chi tiết từng workspace: [**client/README.md**](client/README.md) và [**server/README.md**](server/README.md).
+
+---
+
+## Cấu trúc thư mục (tóm tắt)
 
 ```text
 workBridge-jp-vn/
-├── client/                  # Ứng dụng frontend React chạy bằng Vite
-│   ├── public/              # File tĩnh public, ví dụ icon và favicon
-│   ├── src/                 # Mã nguồn chính của frontend
-│   │   ├── assets/          # Hình ảnh, logo và tài nguyên dùng trong React
-│   │   ├── App.jsx          # Component giao diện chính
-│   │   ├── App.css          # Style riêng cho App.jsx
-│   │   ├── index.css        # Style global cho frontend
-│   │   └── main.jsx         # Điểm khởi động React, render App vào DOM
-│   ├── index.html           # HTML gốc cho Vite
-│   ├── package.json         # Script và dependencies của frontend
-│   └── vite.config.js       # Cấu hình Vite và React plugin
+├── client/                     # React + Vite
+│   ├── src/
+│   │   ├── App.jsx             # Router
+│   │   ├── screens/             # Login, Signup, Dashboard, Chat, Dictionary, UserProfile
+│   │   └── utils/               # socket.js, supabase.js, useSocket.js
+│   ├── public/
+│   ├── index.html
+│   ├── vite.config.js
+│   ├── package.json
+│   └── README.md
 │
-├── server/                  # Ứng dụng backend Express
-│   ├── bin/
-│   │   └── www              # File khởi động HTTP server, mặc định port 3000
-│   ├── public/              # File tĩnh do Express phục vụ
-│   │   └── stylesheets/     # CSS dùng cho view EJS
-│   ├── routes/              # Định nghĩa route backend
-│   │   ├── index.js         # Route trang chủ `/`
-│   │   └── users.js         # Route mẫu `/users`
-│   ├── views/               # Template EJS render từ server
-│   │   ├── index.ejs        # View trang chủ
-│   │   └── error.ejs        # View hiển thị lỗi
-│   ├── app.js               # Cấu hình Express app, middleware, routes, xử lý lỗi
-│   └── package.json         # Script và dependencies của backend
+├── server/                     # Express + Socket.IO
+│   ├── bin/www                  # Entry: HTTP server + Socket
+│   ├── src/
+│   │   ├── app.js               # Express, middleware, mount `/api/*`
+│   │   ├── socket.js            # Socket.IO + JWT handshake
+│   │   ├── routes/              # API và logic route (auth mock, …)
+│   │   ├── db/supabase.js       # Client Supabase phía server
+│   │   ├── repositories/        # Thao tác bảng qua Supabase (ví dụ tinnhan)
+│   │   ├── models/              # Sequelize factories — khớp schema DB & Vitest
+│   │   ├── config/, utils/
+│   ├── views/, public/          # EJS + static Express
+│   ├── test/                    # Vitest
+│   ├── package.json
+│   └── README.md
 │
-├── .gitignore               # Danh sách file/thư mục không đưa lên Git
-├── CLAUDE.md                # Ghi chú hướng dẫn cho AI coding assistant
-├── LICENSE                  # Thông tin giấy phép
-└── README.md                # Tài liệu tổng quan dự án
+├── CLAUDE.md                    # Gợi ý cho AI assistant trong repo
+├── LICENSE
+└── README.md                    # File này
 ```
 
-## Luồng hoạt động tổng quát
+---
 
-Frontend trong `client/` là ứng dụng React hiển thị giao diện người dùng. Khi phát triển local, Vite cung cấp dev server riêng để hỗ trợ hot reload.
+## Luồng hoạt động
 
-Backend trong `server/` là ứng dụng Express. File `server/app.js` cấu hình middleware, static files, view engine EJS và gắn các route từ `server/routes/`. File `server/bin/www` tạo HTTP server và lắng nghe trên port `3000` nếu không cấu hình port khác.
+1. **Dev frontend:** Vite (`client/`), thường `http://localhost:5173`.
+2. **Dev backend:** Express (`server/bin/www`), mặc định `http://localhost:3000` (biến `PORT`).
+3. **Realtime:** Client kết nối Socket.IO tới cùng host/port backend; **JWT** gửi trong `handshake.auth` sau khi đăng nhập.
+4. **Dữ liệu:** REST/query Supabase — anon key trên client (RLS), service role chỉ trong server (không lộ ra frontend).
 
-Về lâu dài, frontend nên giao tiếp với backend thông qua API HTTP. Không import trực tiếp code từ `server/` vào `client/` hoặc ngược lại.
+---
 
-## Cách chạy dự án
+## Chạy dự án (local)
 
-### Chạy frontend
+### 1. Backend
+
+```bash
+cd server
+cp .env.example .env    # Linux/macOS — Windows: copy tay
+# Điền JWT_SECRET, SUPABASE_* khi cần persistence
+npm install
+npm run dev             # hoặc npm start
+```
+
+Backend: [`server/README.md`](server/README.md) (scripts, biến môi trường, API `/api/*`, Socket).
+
+### 2. Frontend
 
 ```bash
 cd client
+cp .env.example .env    # điền VITE_SUPABASE_* và tuỳ chọn VITE_SOCKET_URL
 npm install
 npm run dev
 ```
 
-Sau đó mở URL mà Vite hiển thị trong terminal, thường là `http://localhost:5173`.
+Frontend: [`client/README.md`](client/README.md) (routes, Socket `connectSocket()`, Supabase browser).
 
-### Chạy backend
+Chạy **hai terminal** song song (server trước hoặc cùng lúc) để đủ API và Socket.
+
+---
+
+## Biến môi trường
+
+- **Server:** `server/.env.example` — `PORT`, `JWT_SECRET`, `CLIENT_URL`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, …
+- **Client:** `client/.env.example` — `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, tuỳ chọn `VITE_SOCKET_URL`.
+
+Không commit file `.env` chứa secret.
+
+---
+
+## Kiểm thử backend
 
 ```bash
 cd server
-npm install
-npm start
+npm test
 ```
 
-Backend mặc định chạy ở `http://localhost:3000`.
+---
 
-## Gợi ý cho người mới bắt đầu
+## Gợi ý onboarding
 
-Nếu muốn chỉnh giao diện React, bắt đầu từ `client/src/App.jsx` và các file CSS trong `client/src/`.
+| Muốn làm… | Bắt đầu từ |
+|-----------|------------|
+| UI / route React | [`client/src/App.jsx`](client/src/App.jsx), [`client/README.md`](client/README.md) |
+| API HTTP / middleware | [`server/src/app.js`](server/src/app.js), [`server/src/routes/`](server/src/routes/) |
+| Realtime / lưu tin | [`server/src/socket.js`](server/src/socket.js), [`server/src/repositories/`](server/src/repositories/), [`client/src/utils/socket.js`](client/src/utils/socket.js) |
+| Schema ORM / test model | [`server/src/models/`](server/src/models/), [`server/test/`](server/test/) |
 
-Nếu muốn thêm API hoặc route backend, bắt đầu từ `server/routes/`, sau đó kiểm tra route đã được gắn trong `server/app.js` chưa.
-
-Nếu muốn thay đổi trang render bởi Express, chỉnh các file trong `server/views/`.
+Tham khảo thêm [`CLAUDE.md`](CLAUDE.md) cho convention trong repo.
