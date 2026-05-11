@@ -1,58 +1,50 @@
-const supabase = require('../config/supabase');
+"use strict";
+import { Model } from "sequelize";
 
-const phan_tich_y_nghia = {
-  // 1. READ: Lấy phân tích ý nghĩa của một tin nhắn
-  get_by_message_id: async (ma_tin_nhan) => {
-    const { data, error } = await supabase
-      .from('phan_tich_y_nghia')
-      .select('*')
-      .eq('ma_tin_nhan', ma_tin_nhan)
-      .maybeSingle();
-    if (error) throw error;
-    return data;
-  },
+export default (sequelize, DataTypes) => {
+    class PhanTichYNghia extends Model {
+        static associate(models) {
+            // Quan hệ n-1 với bảng tinnhan (Nhiều phân tích ý nghĩa thuộc về 1 tin nhắn)
+            PhanTichYNghia.belongsTo(models.TinNhan, {
+                foreignKey: "ma_tin_nhan",
+                as: "tin_nhan",
+            });
 
-  // 2. READ: Lấy phân tích kèm theo các Gợi ý trả lời (Join 1-N)
-  get_with_suggestions: async (ma_tin_nhan) => {
-    const { data, error } = await supabase
-      .from('phan_tich_y_nghia')
-      .select('*, goi_y(*)')
-      .eq('ma_tin_nhan', ma_tin_nhan)
-      .maybeSingle();
-    if (error) throw error;
-    return data;
-  },
+            // Quan hệ 1-n với bảng goi_y (1 phân tích ý nghĩa có nhiều gợi ý)
+            PhanTichYNghia.hasMany(models.GoiY, {
+                foreignKey: "ma_y_dinh",
+                as: "danh_sach_goi_y",
+            });
+        }
+    }
 
-  // 3. CREATE: Lưu kết quả phân tích mới
-  create: async (analysis_data) => {
-    const { data, error } = await supabase
-      .from('phan_tich_y_nghia')
-      .insert([analysis_data])
-      .select();
-    if (error) throw error;
-    return data[0];
-  },
+    PhanTichYNghia.init(
+        {
+            ma_y_dinh: {
+                type: DataTypes.UUID,
+                defaultValue: DataTypes.UUIDV4,
+                primaryKey: true,
+            },
+            ma_tin_nhan: {
+                type: DataTypes.UUID,
+                allowNull: true,
+            },
+            sac_thai: {
+                type: DataTypes.STRING(255),
+                allowNull: true,
+            },
+            tom_tat_y_dinh: {
+                type: DataTypes.TEXT,
+                allowNull: true,
+            },
+        },
+        {
+            sequelize,
+            modelName: "PhanTichYNghia",
+            tableName: "phan_tich_y_nghia",
+            timestamps: false,
+        }
+    );
 
-  // 4. UPDATE: Cập nhật phân tích
-  update: async (ma_y_dinh, update_data) => {
-    const { data, error } = await supabase
-      .from('phan_tich_y_nghia')
-      .update(update_data)
-      .eq('ma_y_dinh', ma_y_dinh)
-      .select();
-    if (error) throw error;
-    return data[0];
-  },
-
-  // 5. DELETE: Xóa phân tích
-  delete: async (ma_y_dinh) => {
-    const { error } = await supabase
-      .from('phan_tich_y_nghia')
-      .delete()
-      .eq('ma_y_dinh', ma_y_dinh);
-    if (error) throw error;
-    return { success: true };
-  }
+    return PhanTichYNghia;
 };
-
-module.exports = phan_tich_y_nghia;

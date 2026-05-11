@@ -1,58 +1,44 @@
-const supabase = require('../config/supabase');
+"use strict";
+import { Model } from "sequelize";
 
-const bandich = {
-  // 1. READ: Lấy bản dịch của một tin nhắn cụ thể
-  get_by_message_id: async (ma_tin_nhan) => {
-    const { data, error } = await supabase
-      .from('bandich')
-      .select('*')
-      .eq('ma_tin_nhan', ma_tin_nhan)
-      .maybeSingle();
-    if (error) throw error;
-    return data;
-  },
+export default (sequelize, DataTypes) => {
+    class BanDich extends Model {
+        static associate(models) {
+            // Quan hệ 1-1 với bảng tinnhan (Bản dịch thuộc về 1 tin nhắn)
+            BanDich.belongsTo(models.TinNhan, {
+                foreignKey: "ma_tin_nhan",
+                as: "tin_nhan",
+            });
+        }
+    }
 
-  // 2. READ: Lấy bản dịch kèm theo nội dung gốc từ bảng tin_nhan
-  get_with_original_message: async (ma_ban_dich) => {
-    const { data, error } = await supabase
-      .from('bandich')
-      .select('*, tin_nhan(noi_dung, ma_nguoi_gui)')
-      .eq('ma_ban_dich', ma_ban_dich)
-      .single();
-    if (error) throw error;
-    return data;
-  },
+    BanDich.init(
+        {
+            ma_ban_dich: {
+                type: DataTypes.UUID,
+                defaultValue: DataTypes.UUIDV4,
+                primaryKey: true,
+            },
+            ma_tin_nhan: {
+                type: DataTypes.UUID,
+                allowNull: true,
+            },
+            noidungoc: {
+                type: DataTypes.TEXT,
+                allowNull: true,
+            },
+            noi_dung_da_dich: {
+                type: DataTypes.TEXT,
+                allowNull: true,
+            },
+        },
+        {
+            sequelize,
+            modelName: "BanDich",
+            tableName: "bandich",
+            timestamps: false,
+        }
+    );
 
-  // 3. CREATE: Tạo bản dịch mới
-  create: async (translation_data) => {
-    const { data, error } = await supabase
-      .from('bandich')
-      .insert([translation_data])
-      .select();
-    if (error) throw error;
-    return data[0];
-  },
-
-  // 4. UPDATE: Cập nhật bản dịch
-  update: async (ma_ban_dich, new_content) => {
-    const { data, error } = await supabase
-      .from('bandich')
-      .update({ noi_dung_da_dich: new_content })
-      .eq('ma_ban_dich', ma_ban_dich)
-      .select();
-    if (error) throw error;
-    return data[0];
-  },
-
-  // 5. DELETE: Xóa bản dịch
-  delete: async (ma_ban_dich) => {
-    const { error } = await supabase
-      .from('bandich')
-      .delete()
-      .eq('ma_ban_dich', ma_ban_dich);
-    if (error) throw error;
-    return { success: true };
-  }
+    return BanDich;
 };
-
-module.exports = bandich;

@@ -1,67 +1,54 @@
-const supabase = require('../config/supabase');
+"use strict";
+import { Model } from "sequelize";
 
-const cuoc_hoi_thoai = {
-  // 1. READ: Lấy toàn bộ danh sách cuộc hội thoại (Mới nhất lên đầu)
-  get_all: async () => {
-    const { data, error } = await supabase
-      .from('cuoc_hoi_thoai')
-      .select('*')
-      .order('ngay_tao', { ascending: false });
-    if (error) throw error;
-    return data;
-  },
+export default (sequelize, DataTypes) => {
+    class CuocHoiThoai extends Model {
+        static associate(models) {
+            // Quan hệ 1-n với bảng thanhvienhoithoai (1 cuộc hội thoại có nhiều thành viên)
+            CuocHoiThoai.hasMany(models.ThanhVienHoiThoai, {
+                foreignKey: "ma_cuoc_hoi_thoai",
+                as: "danh_sach_thanh_vien",
+            });
 
-  // 2. READ: Lấy chi tiết một cuộc hội thoại theo ID
-  get_by_id: async (ma_cuoc_hoi_thoai) => {
-    const { data, error } = await supabase
-      .from('cuoc_hoi_thoai')
-      .select('*')
-      .eq('ma_cuoc_hoi_thoai', ma_cuoc_hoi_thoai)
-      .single();
-    if (error) throw error;
-    return data;
-  },
+            // Quan hệ n-n với bảng nguoi_dung thông qua bảng trung gian thanhvienhoithoai
+            CuocHoiThoai.belongsToMany(models.NguoiDung, {
+                through: models.ThanhVienHoiThoai,
+                foreignKey: "ma_cuoc_hoi_thoai",
+                otherKey: "ma_nguoi_dung",
+                as: "nguoi_dung_tham_gia",
+            });
 
-  // 3. READ: Tìm kiếm cuộc hội thoại theo tên
-  search_by_name: async (name) => {
-    const { data, error } = await supabase
-      .from('cuoc_hoi_thoai')
-      .select('*')
-      .ilike('ten_cuoc_hoi_thoai', `%${name}%`);
-    if (error) throw error;
-    return data;
-  },
+            // Quan hệ 1-n với bảng tinnhan (1 cuộc hội thoại có nhiều tin nhắn)
+            CuocHoiThoai.hasMany(models.TinNhan, {
+                foreignKey: "ma_cuoc_hoi_thoai",
+                as: "danh_sach_tin_nhan",
+            });
+        }
+    }
 
-  // 4. CREATE: Tạo cuộc hội thoại mới
-  create: async (conversation_data) => {
-    const { data, error } = await supabase
-      .from('cuoc_hoi_thoai')
-      .insert([conversation_data])
-      .select();
-    if (error) throw error;
-    return data[0];
-  },
+    CuocHoiThoai.init(
+        {
+            ma_cuoc_hoi_thoai: {
+                type: DataTypes.UUID,
+                defaultValue: DataTypes.UUIDV4,
+                primaryKey: true,
+            },
+            ten_cuoc_hoi_thoai: {
+                type: DataTypes.STRING(255),
+                allowNull: true,
+            },
+            ngay_tao: {
+                type: DataTypes.DATE, // Sequelize sử dụng DATE để ánh xạ với TIMESTAMP WITH TIME ZONE
+                defaultValue: DataTypes.NOW, // Tương đương DEFAULT NOW()
+            },
+        },
+        {
+            sequelize,
+            modelName: "CuocHoiThoai",
+            tableName: "cuoc_hoi_thoai",
+            timestamps: false, // Sử dụng trường ngay_tao tự định nghĩa thay vì created_at, updated_at mặc định
+        }
+    );
 
-  // 5. UPDATE: Đổi tên cuộc hội thoại
-  update: async (ma_cuoc_hoi_thoai, update_data) => {
-    const { data, error } = await supabase
-      .from('cuoc_hoi_thoai')
-      .update(update_data)
-      .eq('ma_cuoc_hoi_thoai', ma_cuoc_hoi_thoai)
-      .select();
-    if (error) throw error;
-    return data[0];
-  },
-
-  // 6. DELETE: Xóa cuộc hội thoại
-  delete: async (ma_cuoc_hoi_thoai) => {
-    const { error } = await supabase
-      .from('cuoc_hoi_thoai')
-      .delete()
-      .eq('ma_cuoc_hoi_thoai', ma_cuoc_hoi_thoai);
-    if (error) throw error;
-    return { success: true };
-  }
+    return CuocHoiThoai;
 };
-
-module.exports = cuoc_hoi_thoai;

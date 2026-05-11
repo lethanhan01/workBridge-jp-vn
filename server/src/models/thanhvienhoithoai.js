@@ -1,57 +1,50 @@
-const supabase = require('../config/supabase');
+"use strict";
+import { Model } from "sequelize";
 
-const thanhvienhoithoai = {
-  // 1. CREATE: Thêm thành viên vào cuộc hội thoại (Mời vào nhóm)
-  add_member: async (ma_cuoc_hoi_thoai, ma_nguoi_dung) => {
-    const { data, error } = await supabase
-      .from('thanhvienhoithoai')
-      .insert([{ ma_cuoc_hoi_thoai, ma_nguoi_dung }])
-      .select();
-    if (error) throw error;
-    return data[0];
-  },
+export default (sequelize, DataTypes) => {
+    class ThanhVienHoiThoai extends Model {
+        static associate(models) {
+            // Quan hệ n-1 với bảng nguoi_dung (Nhiều bản ghi thành viên thuộc về 1 người dùng)
+            ThanhVienHoiThoai.belongsTo(models.NguoiDung, {
+                foreignKey: "ma_nguoi_dung",
+                as: "nguoi_dung",
+            });
 
-  // 2. READ: Lấy danh sách tất cả thành viên trong một cuộc hội thoại
-  get_members_by_conversation: async (ma_cuoc_hoi_thoai) => {
-    const { data, error } = await supabase
-      .from('thanhvienhoithoai')
-      .select('*, nguoi_dung(ma_nguoi_dung, ten, email)')
-      .eq('ma_cuoc_hoi_thoai', ma_cuoc_hoi_thoai);
-    if (error) throw error;
-    return data;
-  },
+            // Quan hệ n-1 với bảng cuoc_hoi_thoai (Nhiều bản ghi thành viên thuộc về 1 cuộc hội thoại)
+            ThanhVienHoiThoai.belongsTo(models.CuocHoiThoai, {
+                foreignKey: "ma_cuoc_hoi_thoai",
+                as: "cuoc_hoi_thoai",
+            });
+        }
+    }
 
-  // 3. READ: Lấy danh sách tất cả cuộc hội thoại mà một người dùng tham gia
-  get_conversations_by_user: async (ma_nguoi_dung) => {
-    const { data, error } = await supabase
-      .from('thanhvienhoithoai')
-      .select('*, cuoc_hoi_thoai(*)')
-      .eq('ma_nguoi_dung', ma_nguoi_dung)
-      .order('ngay_tham_gia', { foreignTable: 'cuoc_hoi_thoai', ascending: false });
-    if (error) throw error;
-    return data;
-  },
+    ThanhVienHoiThoai.init(
+        {
+            ma_thanh_vien: {
+                type: DataTypes.UUID,
+                defaultValue: DataTypes.UUIDV4,
+                primaryKey: true,
+            },
+            ma_cuoc_hoi_thoai: {
+                type: DataTypes.UUID,
+                allowNull: true,
+            },
+            ma_nguoi_dung: {
+                type: DataTypes.UUID,
+                allowNull: true,
+            },
+            ngay_tham_gia: {
+                type: DataTypes.DATE,
+                defaultValue: DataTypes.NOW,
+            },
+        },
+        {
+            sequelize,
+            modelName: "ThanhVienHoiThoai",
+            tableName: "thanhvienhoithoai",
+            timestamps: false,
+        }
+    );
 
-  // 4. READ: Kiểm tra xem một người dùng có phải là thành viên của phòng chat không
-  check_membership: async (ma_cuoc_hoi_thoai, ma_nguoi_dung) => {
-    const { data, error } = await supabase
-      .from('thanhvienhoithoai')
-      .select('*')
-      .match({ ma_cuoc_hoi_thoai, ma_nguoi_dung })
-      .maybeSingle();
-    if (error) throw error;
-    return !!data;
-  },
-
-  // 5. DELETE: Xóa thành viên khỏi cuộc hội thoại
-  remove_member: async (ma_cuoc_hoi_thoai, ma_nguoi_dung) => {
-    const { error } = await supabase
-      .from('thanhvienhoithoai')
-      .delete()
-      .match({ ma_cuoc_hoi_thoai, ma_nguoi_dung });
-    if (error) throw error;
-    return { success: true };
-  }
+    return ThanhVienHoiThoai;
 };
-
-module.exports = thanhvienhoithoai;

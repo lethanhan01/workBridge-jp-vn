@@ -1,67 +1,62 @@
-const supabase = require('../config/supabase');
+"use strict";
+import { Model } from "sequelize";
 
-const tu_chuyen_nganh = {
-  // 1. READ: Lấy toàn bộ danh sách từ vựng (Sắp xếp theo chuyên ngành)
-  get_all: async () => {
-    const { data, error } = await supabase
-      .from('tu_chuyen_nganh')
-      .select('*')
-      .order('chuyen_nganh', { ascending: true });
-    if (error) throw error;
-    return data;
-  },
+export default (sequelize, DataTypes) => {
+    class TuChuyenNganh extends Model {
+        static associate(models) {
+            // Quan hệ n-n với bảng nguoi_dung thông qua bảng trung gian nguoi_dung_yeu_thich_tu
+            TuChuyenNganh.belongsToMany(models.NguoiDung, {
+                through: "nguoi_dung_yeu_thich_tu",
+                foreignKey: "ma_tu",
+                otherKey: "ma_nguoi_dung",
+                as: "danh_sach_nguoi_dung_yeu_thich",
+            });
+        }
+    }
 
-  // 2. READ: Lấy chi tiết một từ theo ID
-  get_by_id: async (ma_tu) => {
-    const { data, error } = await supabase
-      .from('tu_chuyen_nganh')
-      .select('*')
-      .eq('ma_tu', ma_tu)
-      .single();
-    if (error) throw error;
-    return data;
-  },
+    TuChuyenNganh.init(
+        {
+            ma_tu: {
+                type: DataTypes.UUID,
+                defaultValue: DataTypes.UUIDV4,
+                primaryKey: true,
+            },
+            chuyen_nganh: {
+                type: DataTypes.STRING(255),
+                allowNull: true,
+            },
+            thuat_ngu_tieng_viet: {
+                type: DataTypes.TEXT,
+                allowNull: true,
+            },
+            thuat_ngu_tieng_nhat: {
+                type: DataTypes.TEXT,
+                allowNull: true,
+            },
+            giai_thich_ngu_tieng_viet: {
+                type: DataTypes.TEXT,
+                allowNull: true,
+            },
+            giai_thich_tieng_nhat: {
+                type: DataTypes.TEXT,
+                allowNull: true,
+            },
+            vi_du_tieng_viet: {
+                type: DataTypes.TEXT,
+                allowNull: true,
+            },
+            vi_du_tieng_nhat: {
+                type: DataTypes.TEXT,
+                allowNull: true,
+            },
+        },
+        {
+            sequelize,
+            modelName: "TuChuyenNganh",
+            tableName: "tu_chuyen_nganh",
+            timestamps: false,
+        }
+    );
 
-  // 3. READ: Tìm kiếm nâng cao (Tìm trong Chuyên ngành, Tiếng Việt hoặc Tiếng Nhật)
-  search: async (query) => {
-    const { data, error } = await supabase
-      .from('tu_chuyen_nganh')
-      .select('*')
-      .or(`chuyen_nganh.ilike.%${query}%,thuat_ngu_tieng_viet.ilike.%${query}%,thuat_ngu_tieng_nhat.ilike.%${query}%`);
-    if (error) throw error;
-    return data;
-  },
-
-  // 4. CREATE: Thêm một hoặc nhiều từ mới
-  create: async (word_data) => {
-    const { data, error } = await supabase
-      .from('tu_chuyen_nganh')
-      .insert(Array.isArray(word_data) ? word_data : [word_data])
-      .select();
-    if (error) throw error;
-    return data;
-  },
-
-  // 5. UPDATE: Cập nhật thông tin từ vựng
-  update: async (ma_tu, update_data) => {
-    const { data, error } = await supabase
-      .from('tu_chuyen_nganh')
-      .update(update_data)
-      .eq('ma_tu', ma_tu)
-      .select();
-    if (error) throw error;
-    return data[0];
-  },
-
-  // 6. DELETE: Xóa từ vựng khỏi hệ thống
-  delete: async (ma_tu) => {
-    const { error } = await supabase
-      .from('tu_chuyen_nganh')
-      .delete()
-      .eq('ma_tu', ma_tu);
-    if (error) throw error;
-    return { success: true };
-  }
+    return TuChuyenNganh;
 };
-
-module.exports = tu_chuyen_nganh;

@@ -28,12 +28,8 @@ const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3000';
 
 // Khởi tạo lazy — chưa kết nối ngay
 let socket = io(SOCKET_URL, {
-  autoConnect: false,       // Không tự kết nối, gọi connectSocket() thủ công
+  autoConnect: false,
   withCredentials: true,
-  auth: {
-    // TODO: Thay thế bằng token thật khi team BE setup JWT middleware
-    token: () => localStorage.getItem('token') || '',
-  },
 });
 
 /**
