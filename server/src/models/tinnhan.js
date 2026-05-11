@@ -1,76 +1,70 @@
-const supabase = require('../config/supabase');
+"use strict";
+import { Model } from "sequelize";
 
-const tinnhan = {
-  // 1. READ: Lấy tin nhắn theo cuộc hội thoại (Có phân trang)
-  get_by_conversation: async (ma_cuoc_hoi_thoai, limit = 50, offset = 0) => {
-    const { data, error } = await supabase
-      .from('tinnhan')
-      .select(`
-        *,
-        nguoi_dung (
-          ma_nguoi_dung,
-          ten
-        )
-      `)
-      .eq('ma_cuoc_hoi_thoai', ma_cuoc_hoi_thoai)
-      .order('thoi_gian', { ascending: true })
-      .range(offset, offset + limit - 1);
-    
-    if (error) throw error;
-    return data;
-  },
+export default (sequelize, DataTypes) => {
+    class TinNhan extends Model {
+        static associate(models) {
+            // 1. Quan hệ n-1 với bảng cuoc_hoi_thoai (Nhiều tin nhắn thuộc về 1 cuộc hội thoại)
+            TinNhan.belongsTo(models.CuocHoiThoai, {
+                foreignKey: "ma_cuoc_hoi_thoai",
+                as: "cuoc_hoi_thoai",
+            });
 
-  // 2. CREATE: Lưu tin nhắn mới
-  create: async (message_data) => {
-    const { data, error } = await supabase
-      .from('tinnhan')
-      .insert([message_data])
-      .select(`
-        *,
-        nguoi_dung (ten)
-      `)
-      .single();
-    
-    if (error) throw error;
-    return data;
-  },
+            // 2. Quan hệ n-1 với bảng nguoi_dung (Nhiều tin nhắn được gửi bởi 1 người dùng)
+            TinNhan.belongsTo(models.NguoiDung, {
+                foreignKey: "ma_nguoi_gui",
+                as: "nguoi_gui",
+            });
 
-  // 3. UPDATE: Cập nhật trạng thái tin nhắn (Ví dụ: Chuyển từ 'sent' sang 'seen')
-  update_status: async (ma_tin_nhan, trang_thai) => {
-    const { data, error } = await supabase
-      .from('tinnhan')
-      .update({ trang_thai })
-      .eq('ma_tin_nhan', ma_tin_nhan)
-      .select();
-    
-    if (error) throw error;
-    return data[0];
-  },
+            // 3. Quan hệ 1-1 với bảng bandich (1 tin nhắn có 1 bản dịch)
+            TinNhan.hasOne(models.BanDich, {
+                foreignKey: "ma_tin_nhan",
+                as: "ban_dich",
+            });
 
-  // 4. DELETE: Xóa tin nhắn (Thu hồi tin nhắn)
-  delete: async (ma_tin_nhan, ma_nguoi_gui) => {
-    const { error } = await supabase
-      .from('tinnhan')
-      .delete()
-      .match({ ma_tin_nhan, ma_nguoi_gui });
-    
-    if (error) throw error;
-    return { success: true };
-  },
+            // 4. Quan hệ 1-n với bảng phan_tich_y_nghia (1 tin nhắn có thể có nhiều phân tích ý nghĩa)
+            TinNhan.hasMany(models.PhanTichYNghia, {
+                foreignKey: "ma_tin_nhan",
+                as: "danh_sach_phan_tich",
+            });
+        }
+    }
 
-  // 5. READ: Lấy tin nhắn mới nhất của một cuộc hội thoại
-  get_latest_message: async (ma_cuoc_hoi_thoai) => {
-    const { data, error } = await supabase
-      .from('tin_nhan')
-      .select('*')
-      .eq('ma_cuoc_hoi_thoai', ma_cuoc_hoi_thoai)
-      .order('thoi_gian', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    
-    if (error) throw error;
-    return data;
-  }
+    TinNhan.init(
+        {
+            ma_tin_nhan: {
+                type: DataTypes.UUID,
+                defaultValue: DataTypes.UUIDV4,
+                primaryKey: true,
+            },
+            ma_cuoc_hoi_thoai: {
+                type: DataTypes.UUID,
+                allowNull: true,
+            },
+            ma_nguoi_gui: {
+                type: DataTypes.UUID,
+                allowNull: true,
+            },
+            noi_dung: {
+                type: DataTypes.TEXT,
+                allowNull: true,
+            },
+            trang_thai: {
+                type: DataTypes.STRING(50),
+                allowNull: true,
+            },
+            time: {
+                type: DataTypes.DATE,
+                defaultValue: DataTypes.NOW,
+            },
+        },
+        {
+            sequelize,
+            modelName: "TinNhan",
+            tableName: "tinnhan",
+            timestamps: false,
+        }
+    );
+
+    return TinNhan;
 };
-
-module.exports = tinnhan;
