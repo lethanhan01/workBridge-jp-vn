@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSocket } from "../../utils/useSocket";
 import "./Chat.css";
@@ -127,7 +127,7 @@ export default function Chat({ contact, onBack }) {
   // TODO: Thay DEFAULT_MESSAGES bằng lịch sử chat fetch từ API khi có BE
   // TODO: Thay contactId bằng contact?.id thật khi có data từ Dashboard
   const contactId = contact?.id || null;
-  const { messages, setMessages, sendMessage, isConnected } = useSocket(
+  const { messages, setMessages } = useSocket(
     currentUserId,
     contactId,
     DEFAULT_MESSAGES   // Dùng tạm tin nhắn mẫu; xóa khi kết nối DB thật
