@@ -27,6 +27,12 @@ import { chatApi } from "../api/chatApi";
 import { socketService } from "../services/socketService";
 
 
+interface Suggestion {
+  viText: string;
+  jpText: string;
+  score: 1 | 2 | 3; // muc_do_phu_hop
+}
+
 interface Message {
   id: string;
   text: string;
@@ -35,6 +41,9 @@ interface Message {
   timestamp: string;
   intent?: string;
   context?: string;
+  tone?: "trang trọng" | "thân mật" | "trung lập"; // sac_thai from DB
+  suggestions?: Suggestion[]; // goi_y from DB
+  analysisReady?: boolean; // true when AI analysis is complete
   senderNationality: "japan" | "vietnam";
   receiverNationality: "japan" | "vietnam";
   attachments?: Array<{
@@ -439,18 +448,31 @@ export function ChatPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Map backend message to frontend Message interface
-  const mapBackendMessage = (msg: any): Message => ({
-    id: msg.ma_tin_nhan || Date.now().toString(),
-    text: msg.noi_dung,
-    translatedText: msg.ban_dich || "Dịch tự động: " + msg.noi_dung,
-    sender: msg.ma_nguoi_gui === user?.id ? "me" : "other",
-    timestamp: new Date(msg.time).toLocaleTimeString("ja-JP", {
-      hour: "2-digit",
-      minute: "2-digit",
-    }),
-    senderNationality: msg.ma_nguoi_gui === user?.id ? (user?.nationality || "vietnam") : "japan",
-    receiverNationality: msg.ma_nguoi_gui === user?.id ? "japan" : (user?.nationality || "vietnam"),
-  });
+  const mapBackendMessage = (msg: any): Message => {
+    const analysis = msg.phan_tich_y_nghia?.[0]; // Analysis is an array from join
+    const suggestions: Suggestion[] = analysis?.goi_y?.map((s: any) => ({
+      viText: s.noi_dung_tieng_viet,
+      jpText: s.noi_dung_tieng_nhat,
+      score: s.muc_do_phu_hop,
+    })) || [];
+
+    return {
+      id: msg.ma_tin_nhan || Date.now().toString(),
+      text: msg.noi_dung,
+      translatedText: msg.bandich?.[0]?.noi_dung_da_dich || msg.noi_dung,
+      sender: msg.ma_nguoi_gui === user?.id ? "me" : "other",
+      timestamp: new Date(msg.time).toLocaleTimeString("ja-JP", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+      intent: analysis?.tom_tat_y_dinh,
+      tone: analysis?.sac_thai,
+      suggestions: suggestions.length > 0 ? suggestions : undefined,
+      analysisReady: !!analysis, // true if analysis exists
+      senderNationality: msg.ma_nguoi_gui === user?.id ? (user?.nationality || "vietnam") : "japan",
+      receiverNationality: msg.ma_nguoi_gui === user?.id ? "japan" : (user?.nationality || "vietnam"),
+    };
+  };
 
   useEffect(() => {
     if (!contactId || !user) return;
@@ -463,6 +485,15 @@ export function ChatPage() {
     const unsubscribe = socketService.onMessage((msg) => {
       if (msg.ma_cuoc_hoi_thoai === contactId) {
         setMessages(prev => [...prev, mapBackendMessage(msg)]);
+      }
+    });
+
+    // Listen for AI analysis ready
+    const unsubscribeAiReady = socketService.onMessageAiReady((msg) => {
+      if (msg.ma_cuoc_hoi_thoai === contactId) {
+        setMessages(prev => prev.map(m => 
+          m.id === msg.ma_tin_nhan ? mapBackendMessage(msg) : m
+        ));
       }
     });
 
@@ -493,9 +524,9 @@ export function ChatPage() {
 
     fetchData();
 
-
     return () => {
       unsubscribe();
+      unsubscribeAiReady();
       // Optionally disconnect socket if needed, but usually better to keep it alive
     };
   }, [contactId, user]);
@@ -535,18 +566,27 @@ export function ChatPage() {
   }, [newMessage]);
 
   useEffect(() => {
-    // Update reply suggestions based on last received message
+    // Update reply suggestions based on last received message's AI suggestions
     const lastReceivedMessage = [...messages]
       .reverse()
       .find((m) => m.sender === "other");
     
     if (lastReceivedMessage) {
-      const matched = replySuggestions.filter((suggestion) =>
-        suggestion.triggers.some((trigger) =>
-          lastReceivedMessage.text.includes(trigger)
-        )
-      );
-      setReplySuggestionsState(matched.length > 0 ? matched : []);
+      if (lastReceivedMessage.suggestions && lastReceivedMessage.suggestions.length > 0) {
+        // Convert DB suggestions to replySuggestions format
+        const convertedSuggestions = lastReceivedMessage.suggestions.map((s, idx) => ({
+          id: `db-${lastReceivedMessage.id}-${idx}`,
+          triggers: [],
+          text: s.jpText,
+          translation: s.viText,
+          category: "提案",
+          context: `関連性スコア: ${s.score}/3 | Điểm liên quan: ${s.score}/3`,
+        }));
+        setReplySuggestionsState(convertedSuggestions);
+      } else {
+        // Fallback to empty if no suggestions from AI yet
+        setReplySuggestionsState([]);
+      }
     }
   }, [messages]);
 
@@ -739,6 +779,44 @@ export function ChatPage() {
                 >
                   <p className="text-sm whitespace-pre-wrap">{message.text}</p>
                   
+                  {/* Translation shown by default */}
+                  <p
+                    className={`text-xs mt-2 pt-2 border-t ${
+                      message.sender === "me"
+                        ? "border-blue-400 text-blue-100"
+                        : "border-gray-200 text-gray-600"
+                    }`}
+                  >
+                    {message.translatedText}
+                  </p>
+
+                  {/* Tone badge */}
+                  {message.tone && (
+                    <div className="mt-2">
+                      <Badge
+                        className={`text-xs ${
+                          message.sender === "me"
+                            ? "bg-blue-400 text-blue-900"
+                            : "bg-gray-200 text-gray-700"
+                        }`}
+                      >
+                        {message.tone === "trang trọng"
+                          ? "正式 / Trang trọng"
+                          : message.tone === "thân mật"
+                          ? "親密 / Thân mật"
+                          : "中立 / Trung lập"}
+                      </Badge>
+                    </div>
+                  )}
+
+                  {/* AI Analysis Loading Indicator */}
+                  {!message.analysisReady && (
+                    <div className="mt-2 flex items-center gap-1 text-xs opacity-70">
+                      <span className="inline-block w-1.5 h-1.5 bg-current rounded-full animate-pulse"></span>
+                      {message.sender === "me" ? "分析中..." : "Đang phân tích..."}
+                    </div>
+                  )}
+                  
                   {/* Attachments */}
                   {message.attachments && message.attachments.length > 0 && (
                     <div className="mt-2 space-y-2">
@@ -784,18 +862,6 @@ export function ChatPage() {
                         </div>
                       ))}
                     </div>
-                  )}
-
-                  {showTranslation && (
-                    <p
-                      className={`text-xs mt-1 pt-1 border-t ${
-                        message.sender === "me"
-                          ? "border-blue-400 text-blue-100"
-                          : "border-gray-200 text-gray-600"
-                      }`}
-                    >
-                      {message.translatedText}
-                    </p>
                   )}
                 </div>
 
