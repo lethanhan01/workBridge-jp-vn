@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -11,8 +11,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../ui/dialog";
-import { Search, X, Users, MessageCircle, Check } from "lucide-react";
+import { Search, X, Users, MessageCircle, Check, Loader2 } from "lucide-react";
 import { ScrollArea } from "../ui/scroll-area";
+import { chatApi } from "../../api/chatApi";
 
 interface Contact {
   id: string;
@@ -25,74 +26,18 @@ interface Contact {
   avatar: string;
 }
 
+interface BackendUser {
+  ma_nguoi_dung: string;
+  ten: string;
+  ten_dang_nhap: string;
+  email: string;
+  ma_ngon_ngu?: string;
+}
+
 interface NewConversationDialogProps {
   open: boolean;
   onClose: () => void;
 }
-
-// Mock contacts data
-const mockContacts: Contact[] = [
-  {
-    id: "1",
-    name: "田中健太",
-    nameJp: "田中健太",
-    nameVn: "Tanaka Kenta",
-    email: "tanaka@company.com",
-    department: "営業部 / Sales",
-    nationality: "japan",
-    avatar: "",
-  },
-  {
-    id: "2",
-    name: "佐藤美咲",
-    nameJp: "佐藤美咲",
-    nameVn: "Sato Misaki",
-    email: "sato@company.com",
-    department: "マーケティング / Marketing",
-    nationality: "japan",
-    avatar: "",
-  },
-  {
-    id: "3",
-    name: "Nguyễn Văn Hùng",
-    nameJp: "グエン・ヴァン・フン",
-    nameVn: "Nguyễn Văn Hùng",
-    email: "hung.nguyen@company.com",
-    department: "開発部 / Development",
-    nationality: "vietnam",
-    avatar: "",
-  },
-  {
-    id: "4",
-    name: "Trần Thị Mai",
-    nameJp: "チャン・ティ・マイ",
-    nameVn: "Trần Thị Mai",
-    email: "mai.tran@company.com",
-    department: "人事部 / HR",
-    nationality: "vietnam",
-    avatar: "",
-  },
-  {
-    id: "5",
-    name: "山田太郎",
-    nameJp: "山田太郎",
-    nameVn: "Yamada Taro",
-    email: "yamada@company.com",
-    department: "技術部 / Technical",
-    nationality: "japan",
-    avatar: "",
-  },
-  {
-    id: "6",
-    name: "Lê Văn Đức",
-    nameJp: "レ・ヴァン・ドゥック",
-    nameVn: "Lê Văn Đức",
-    email: "duc.le@company.com",
-    department: "営業部 / Sales",
-    nationality: "vietnam",
-    avatar: "",
-  },
-];
 
 export function NewConversationDialog({
   open,
@@ -101,8 +46,47 @@ export function NewConversationDialog({
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedContacts, setSelectedContacts] = useState<string[]>([]);
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
 
-  const filteredContacts = mockContacts.filter(
+  // Fetch users when dialog opens
+  useEffect(() => {
+    if (!open) return;
+
+    const fetchUsers = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const data: BackendUser[] = await chatApi.getUsers();
+
+        // Map backend response to Contact interface
+        const mappedContacts: Contact[] = data.map((user) => ({
+          id: user.ma_nguoi_dung,
+          name: user.ten,
+          nameJp: user.ten,
+          nameVn: user.ten,
+          email: user.email,
+          department: "",
+          nationality: user.ma_ngon_ngu === "jp" ? "japan" : "vietnam",
+          avatar: "",
+        }));
+
+        setContacts(mappedContacts);
+      } catch (err) {
+        console.error("Error fetching users:", err);
+        setError("Không thể tải danh sách người dùng / ユーザーリストの読み込みに失敗しました");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchUsers();
+  }, [open]);
+
+
+  const filteredContacts = contacts.filter(
     (contact) =>
       contact.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       contact.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -121,31 +105,42 @@ export function NewConversationDialog({
     setSelectedContacts((prev) => prev.filter((id) => id !== contactId));
   };
 
-  const handleCreateConversation = () => {
+  const handleCreateConversation = async () => {
     if (selectedContacts.length === 0) return;
 
-    if (selectedContacts.length === 1) {
-      // 1-on-1 chat
-      navigate(`/app/chat/${selectedContacts[0]}`);
-    } else {
-      // Group chat - tạo ID group từ các contact IDs
-      const groupId = `group-${selectedContacts.sort().join("-")}`;
-      navigate(`/app/chat/${groupId}`);
+    try {
+      setIsCreating(true);
+
+      if (selectedContacts.length === 1) {
+        // 1-on-1 chat - call API to create conversation
+        const response = await chatApi.createConversation(selectedContacts[0]);
+        const conversationId = response.ma_cuoc_hoi_thoai || selectedContacts[0];
+        navigate(`/app/chat/${conversationId}`);
+      } else {
+        // Group chat - TODO: implement when backend supports group conversations
+        alert("Tính năng chat nhóm sắp sửa! / グループチャット機能は準備中です！");
+      }
+
+      // Reset và đóng dialog
+      setSelectedContacts([]);
+      setSearchQuery("");
+      onClose();
+    } catch (err) {
+      console.error("Error creating conversation:", err);
+      setError("Không thể tạo hội thoại / 会話の作成に失敗しました");
+    } finally {
+      setIsCreating(false);
     }
-    
-    // Reset và đóng dialog
-    setSelectedContacts([]);
-    setSearchQuery("");
-    onClose();
   };
 
   const handleClose = () => {
     setSelectedContacts([]);
     setSearchQuery("");
+    setError(null);
     onClose();
   };
 
-  const selectedContactsData = mockContacts.filter((contact) =>
+  const selectedContactsData = contacts.filter((contact) =>
     selectedContacts.includes(contact.id)
   );
 
@@ -227,24 +222,39 @@ export function NewConversationDialog({
         {/* Contacts List */}
         <div className="flex-1 min-h-0 overflow-hidden">
           <ScrollArea className="h-full px-6 py-4">
-            <div className="space-y-2">
-              {filteredContacts.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-32 text-center">
-                  <Search className="w-12 h-12 text-gray-300 mb-3" />
-                  <p className="text-sm text-gray-500">
-                    連絡先が見つかりません
-                    <br />
-                    Không tìm thấy liên hệ
-                  </p>
-                </div>
-              ) : (
-                filteredContacts.map((contact) => {
+            {isLoading ? (
+              <div className="flex flex-col items-center justify-center h-full min-h-32 text-center">
+                <Loader2 className="w-8 h-8 text-[#4a9d9c] mb-3 animate-spin" />
+                <p className="text-sm text-gray-600">
+                  読み込み中... / Đang tải...
+                </p>
+              </div>
+            ) : error ? (
+              <div className="flex flex-col items-center justify-center h-full min-h-32 text-center">
+                <X className="w-12 h-12 text-red-300 mb-3" />
+                <p className="text-sm text-red-600">{error}</p>
+              </div>
+            ) : filteredContacts.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-32 text-center">
+                <Search className="w-12 h-12 text-gray-300 mb-3" />
+                <p className="text-sm text-gray-500">
+                  連絡先が見つかりません
+                  <br />
+                  Không tìm thấy liên hệ
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {filteredContacts.map((contact) => {
                   const isSelected = selectedContacts.includes(contact.id);
                   return (
                     <button
                       key={contact.id}
                       onClick={() => toggleContact(contact.id)}
+                      disabled={isCreating}
                       className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-all text-left ${
+                        isCreating ? "opacity-50 cursor-not-allowed" : ""
+                      } ${
                         isSelected
                           ? "border-[#4a9d9c] bg-[#e8f5f5] shadow-sm"
                           : "border-gray-200 hover:border-[#4a9d9c] hover:bg-[#f8fafa]"
@@ -285,15 +295,17 @@ export function NewConversationDialog({
                         <p className="text-sm text-gray-600 truncate">
                           {contact.email}
                         </p>
-                        <p className="text-xs text-gray-500 truncate">
-                          {contact.department}
-                        </p>
+                        {contact.department && (
+                          <p className="text-xs text-gray-500 truncate">
+                            {contact.department}
+                          </p>
+                        )}
                       </div>
                     </button>
                   );
-                })
-              )}
-            </div>
+                })}
+              </div>
+            )}
           </ScrollArea>
         </div>
 
@@ -320,15 +332,24 @@ export function NewConversationDialog({
             )}
           </div>
           <div className="flex gap-2 shrink-0">
-            <Button variant="outline" onClick={handleClose}>
+            <Button
+              variant="outline"
+              onClick={handleClose}
+              disabled={isCreating}
+            >
               キャンセル / Hủy
             </Button>
             <Button
               onClick={handleCreateConversation}
-              disabled={selectedContacts.length === 0}
+              disabled={selectedContacts.length === 0 || isCreating}
               className="bg-[#4a9d9c] hover:bg-[#3d8887]"
             >
-              {selectedContacts.length <= 1 ? (
+              {isCreating ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  作成中... / Đang tạo...
+                </>
+              ) : selectedContacts.length <= 1 ? (
                 <>
                   <MessageCircle className="w-4 h-4 mr-2" />
                   チャット開始 / Bắt đầu

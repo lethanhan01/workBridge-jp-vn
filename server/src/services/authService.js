@@ -1,4 +1,4 @@
-const NguoiDung = require('../models/nguoi_dung');
+const NguoiDung = require('../models/nguoiDung');
 const supabase = require('../config/supabase');
 
 const loginUser = async (identifier, password) => {

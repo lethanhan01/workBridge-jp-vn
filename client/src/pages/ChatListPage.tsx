@@ -24,68 +24,6 @@ interface Contact {
   isOnline: boolean;
 }
 
-const mockContacts: Contact[] = [
-  {
-    id: "1",
-    name: "田中健太",
-    nameJp: "田中健太",
-    nameVn: "Tanaka Kenta",
-    avatar: "",
-    lastMessage: "プロジェクトの進捗について確認させてください",
-    lastMessageTime: "2分前",
-    unreadCount: 2,
-    nationality: "japan",
-    isOnline: true,
-  },
-  {
-    id: "2",
-    name: "Nguyễn Văn An",
-    nameJp: "グエン・ヴァン・アン",
-    nameVn: "Nguyễn Văn An",
-    avatar: "",
-    lastMessage: "明日の会議の資料を送りました",
-    lastMessageTime: "15分前",
-    unreadCount: 0,
-    nationality: "vietnam",
-    isOnline: true,
-  },
-  {
-    id: "3",
-    name: "佐藤美咲",
-    nameJp: "佐藤美咲",
-    nameVn: "Satou Misaki",
-    avatar: "",
-    lastMessage: "ありがとうございます！",
-    lastMessageTime: "1時間前",
-    unreadCount: 0,
-    nationality: "japan",
-    isOnline: false,
-  },
-  {
-    id: "4",
-    name: "Trần Thị Mai",
-    nameJp: "チャン・ティ・マイ",
-    nameVn: "Trần Thị Mai",
-    avatar: "",
-    lastMessage: "Đã hoàn thành báo cáo",
-    lastMessageTime: "2時間前",
-    unreadCount: 1,
-    nationality: "vietnam",
-    isOnline: true,
-  },
-  {
-    id: "5",
-    name: "山本隆",
-    nameJp: "山本隆",
-    nameVn: "Yamamoto Takashi",
-    avatar: "",
-    lastMessage: "お疲れ様です",
-    lastMessageTime: "昨日",
-    unreadCount: 0,
-    nationality: "japan",
-    isOnline: false,
-  },
-];
 
 export function ChatListPage() {
   const { t } = useLanguage();

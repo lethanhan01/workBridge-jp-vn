@@ -5,6 +5,7 @@ const SOCKET_URL = 'http://localhost:3000';
 class SocketService {
   private socket: Socket | null = null;
   private listeners: ((message: any) => void)[] = [];
+  private aiReadyListeners: ((message: any) => void)[] = [];
 
   connect() {
     if (this.socket?.connected) return;
@@ -17,6 +18,10 @@ class SocketService {
 
     this.socket.on('receive_message', (message) => {
       this.listeners.forEach(listener => listener(message));
+    });
+
+    this.socket.on('message_ai_ready', (message) => {
+      this.aiReadyListeners.forEach(listener => listener(message));
     });
 
     this.socket.on('disconnect', () => {
@@ -40,6 +45,13 @@ class SocketService {
     this.listeners.push(callback);
     return () => {
       this.listeners = this.listeners.filter(l => l !== callback);
+    };
+  }
+
+  onMessageAiReady(callback: (message: any) => void) {
+    this.aiReadyListeners.push(callback);
+    return () => {
+      this.aiReadyListeners = this.aiReadyListeners.filter(l => l !== callback);
     };
   }
 
