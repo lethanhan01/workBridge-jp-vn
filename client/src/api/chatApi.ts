@@ -15,11 +15,11 @@ export const chatApi = {
   getUsers: () =>
     apiClient('/chat/users', { headers: getAuthHeader() }),
 
-  // Tạo cuộc hội thoại mới với 1 người
-  createConversation: (maNguoiDungKia: string) =>
+  // Tạo cuộc hội thoại mới (hỗ trợ cả 1-1 và nhóm)
+  createConversation: (payload: { maNguoiDungKia?: string; danhSachMaNguoiDung?: string[]; tenCuocHoiThoai?: string }) =>
     apiClient('/chat/conversations', {
       method: 'POST',
       headers: getAuthHeader(),
-      body: JSON.stringify({ maNguoiDungKia }),
+      body: JSON.stringify(payload),
     }),
 };

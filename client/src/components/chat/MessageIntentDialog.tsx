@@ -9,6 +9,12 @@ import { Badge } from "../ui/badge";
 import { Lightbulb, MessageCircle, AlertCircle } from "lucide-react";
 import { useLanguage } from "../../utils/contexts/LanguageContext";
 
+interface Suggestion {
+  viText: string;
+  jpText: string;
+  score?: number;
+}
+
 interface Message {
   id: string;
   text: string;
@@ -18,11 +24,13 @@ interface Message {
   intent?: string;
   context?: string;
   culturalNotes?: string;
+  suggestions?: Suggestion[];
 }
 
 interface MessageIntentDialogProps {
   message: Message;
   onClose: () => void;
+  onSelectSuggestion?: (text: string) => void;
 }
 
 export function MessageIntentDialog({
@@ -31,7 +39,7 @@ export function MessageIntentDialog({
 }: MessageIntentDialogProps) {
   const { t, language } = useLanguage();
 
-  const suggestions = [
+  const defaultSuggestions = [
     {
       ja: "了解しました。よろしくお願いします。",
       vi: "Tôi hiểu rồi. Rất mong được hợp tác.",
@@ -45,6 +53,10 @@ export function MessageIntentDialog({
       vi: "Tôi đã hiểu. Nếu có gì xin liên hệ với tôi.",
     },
   ];
+
+  const suggestions = (message.suggestions && message.suggestions.length > 0)
+    ? message.suggestions.map(s => ({ ja: s.jpText, vi: s.viText }))
+    : defaultSuggestions;
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
@@ -113,6 +125,12 @@ export function MessageIntentDialog({
               {suggestions.map((suggestion, index) => (
                 <button
                   key={index}
+                  onClick={() => {
+                    if (onSelectSuggestion) {
+                      onSelectSuggestion(language === "ja" ? suggestion.ja : suggestion.vi);
+                    }
+                    onClose();
+                  }}
                   className="w-full text-left p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   <p className="text-sm">

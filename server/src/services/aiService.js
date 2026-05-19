@@ -1,17 +1,15 @@
 const { geminiModel } = require('../config/gemini');
 
 async function analyzeMessage(noiDung, ngonNguNguoiGui) {
-  const ngonNguDich = ngonNguNguoiGui === 'vi' ? 'tiếng Nhật' : 'tiếng Việt';
   const tenNgonNguGui = ngonNguNguoiGui === 'vi' ? 'tiếng Việt' : 'tiếng Nhật';
 
-  const prompt = `Bạn là trợ lý dịch thuật Nhật-Việt chuyên nghiệp.
+  const prompt = `Bạn là trợ lý AI chuyên nghiệp hiểu văn hóa doanh nghiệp Nhật - Việt.
 Phân tích tin nhắn sau và trả về JSON thuần, không có markdown, không có backtick.
 
 Tin nhắn (${tenNgonNguGui}): "${noiDung}"
 
 Trả về đúng format này:
 {
-  "ban_dich": "bản dịch sang ${ngonNguDich}",
   "sac_thai": "trang trọng hoặc thân mật hoặc trung lập",
   "tom_tat_y_dinh": "mô tả ngắn ý định người gửi, 1 câu",
   "goi_y": [
@@ -28,7 +26,7 @@ Trả về đúng format này:
     return JSON.parse(cleaned);
   } catch (err) {
     console.error('[aiService] Lỗi Gemini:', err.message);
-    return { ban_dich: null, sac_thai: null, tom_tat_y_dinh: null, goi_y: [] };
+    return { sac_thai: null, tom_tat_y_dinh: null, goi_y: [] };
   }
 }
 

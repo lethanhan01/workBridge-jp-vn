@@ -49,20 +49,56 @@ const getUsers = async (req, res) => {
   }
 };
 
-// Tạo cuộc hội thoại mới
+// Tạo cuộc hội thoại mới (Hỗ trợ cả chat 1-1 và chat nhóm)
 const createConversation = async (req, res) => {
   try {
     const myId = req.user.id;
-    const { maNguoiDungKia } = req.body; // UUID của người được chọn
+    const { maNguoiDungKia, danhSachMaNguoiDung, tenCuocHoiThoai } = req.body;
 
-    // Tên cuộc hội thoại tự động, frontend có thể hiển thị tên đối phương
-    const tenCuocHoiThoai = `Chat_${Date.now()}`;
+    let members = [];
+    let nameOfConversation = tenCuocHoiThoai;
 
-    const data = await cuocHoiThoai.createWithMembers(tenCuocHoiThoai, [
-      myId,
-      maNguoiDungKia,
-    ]);
+    if (danhSachMaNguoiDung && Array.isArray(danhSachMaNguoiDung)) {
+      // Chat nhóm
+      members = [myId, ...danhSachMaNguoiDung];
+      
+      // Nếu không gửi tên cuộc hội thoại từ frontend, tự động tạo tên dựa vào các thành viên
+      if (!nameOfConversation) {
+        const { data: users, error: userError } = await supabase
+          .from('nguoi_dung')
+          .select('ten')
+          .in('ma_nguoi_dung', danhSachMaNguoiDung);
+        
+        if (!userError && users && users.length > 0) {
+          const names = users.map(u => u.ten).join(', ');
+          nameOfConversation = `Đoạn chat cùng với ${names}`;
+        } else {
+          nameOfConversation = `Đoạn chat nhóm ${Date.now()}`;
+        }
+      }
+    } else if (maNguoiDungKia) {
+      // Chat 1-1
+      members = [myId, maNguoiDungKia];
+      
+      if (!nameOfConversation) {
+        // Lấy tên của người kia để đặt tên hội thoại mặc định
+        const { data: userKia, error: userError } = await supabase
+          .from('nguoi_dung')
+          .select('ten')
+          .eq('ma_nguoi_dung', maNguoiDungKia)
+          .single();
+        
+        if (!userError && userKia) {
+          nameOfConversation = `Đoạn chat cùng với ${userKia.ten}`;
+        } else {
+          nameOfConversation = `Đoạn chat ${Date.now()}`;
+        }
+      }
+    } else {
+      return res.status(400).json({ message: 'Thiếu thông tin người nhận hoặc danh sách thành viên' });
+    }
 
+    const data = await cuocHoiThoai.createWithMembers(nameOfConversation, members);
     res.status(201).json(data);
   } catch (err) {
     console.error('Lỗi tạo cuộc hội thoại:', err);

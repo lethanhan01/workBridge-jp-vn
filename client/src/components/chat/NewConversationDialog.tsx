@@ -14,6 +14,7 @@ import {
 import { Search, X, Users, MessageCircle, Check, Loader2 } from "lucide-react";
 import { ScrollArea } from "../ui/scroll-area";
 import { chatApi } from "../../api/chatApi";
+import { useLanguage } from "../../utils/contexts/LanguageContext";
 
 interface Contact {
   id: string;
@@ -44,6 +45,7 @@ export function NewConversationDialog({
   onClose,
 }: NewConversationDialogProps) {
   const navigate = useNavigate();
+  const { t, language } = useLanguage();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedContacts, setSelectedContacts] = useState<string[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -76,7 +78,7 @@ export function NewConversationDialog({
         setContacts(mappedContacts);
       } catch (err) {
         console.error("Error fetching users:", err);
-        setError("Không thể tải danh sách người dùng / ユーザーリストの読み込みに失敗しました");
+        setError(t("ユーザーリストの読み込みに失敗しました", "Không thể tải danh sách người dùng"));
       } finally {
         setIsLoading(false);
       }
@@ -113,12 +115,19 @@ export function NewConversationDialog({
 
       if (selectedContacts.length === 1) {
         // 1-on-1 chat - call API to create conversation
-        const response = await chatApi.createConversation(selectedContacts[0]);
+        const response = await chatApi.createConversation({ maNguoiDungKia: selectedContacts[0] });
         const conversationId = response.ma_cuoc_hoi_thoai || selectedContacts[0];
         navigate(`/app/chat/${conversationId}`);
       } else {
-        // Group chat - TODO: implement when backend supports group conversations
-        alert("Tính năng chat nhóm sắp sửa! / グループチャット機能は準備中です！");
+        // Group chat - call API to create group conversation
+        const memberNames = selectedContactsData.map((c) => c.name).join(", ");
+        const tenCuocHoiThoai = t(`会話：${memberNames}`, `Đoạn chat cùng với ${memberNames}`);
+        const response = await chatApi.createConversation({
+          danhSachMaNguoiDung: selectedContacts,
+          tenCuocHoiThoai,
+        });
+        const conversationId = response.ma_cuoc_hoi_thoai;
+        navigate(`/app/chat/${conversationId}`);
       }
 
       // Reset và đóng dialog
@@ -127,7 +136,7 @@ export function NewConversationDialog({
       onClose();
     } catch (err) {
       console.error("Error creating conversation:", err);
-      setError("Không thể tạo hội thoại / 会話の作成に失敗しました");
+      setError(t("会話の作成に失敗しました", "Không thể tạo hội thoại"));
     } finally {
       setIsCreating(false);
     }
@@ -150,12 +159,10 @@ export function NewConversationDialog({
         <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
           <DialogTitle className="text-xl flex items-center gap-2">
             <MessageCircle className="w-5 h-5 text-[#4a9d9c]" />
-            新しい会話を開始 / Bắt đầu hội thoại mới
+            {t("新しい会話を開始", "Bắt đầu hội thoại mới")}
           </DialogTitle>
           <DialogDescription>
-            1人または複数人を選択してチャットを開始
-            <br />
-            Chọn một hoặc nhiều người để bắt đầu chat
+            {t("1人または複数人を選択してチャットを開始", "Chọn một hoặc nhiều người để bắt đầu chat")}
           </DialogDescription>
         </DialogHeader>
 
@@ -165,7 +172,7 @@ export function NewConversationDialog({
             <div className="flex items-center gap-2 mb-2">
               <Users className="w-4 h-4 text-[#4a9d9c]" />
               <span className="text-sm font-medium text-gray-700">
-                選択中 / Đã chọn ({selectedContacts.length})
+                {t("選択中", "Đã chọn")} ({selectedContacts.length})
               </span>
             </div>
             <div className="max-h-24 overflow-y-auto">
@@ -203,7 +210,7 @@ export function NewConversationDialog({
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <Input
               type="text"
-              placeholder="名前、メール、部署で検索 / Tìm theo tên, email, phòng ban..."
+              placeholder={t("名前、メール、部署で検索...", "Tìm theo tên, email, phòng ban...")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10 pr-10"
@@ -226,7 +233,7 @@ export function NewConversationDialog({
               <div className="flex flex-col items-center justify-center h-full min-h-32 text-center">
                 <Loader2 className="w-8 h-8 text-[#4a9d9c] mb-3 animate-spin" />
                 <p className="text-sm text-gray-600">
-                  読み込み中... / Đang tải...
+                  {t("読み込み中...", "Đang tải...")}
                 </p>
               </div>
             ) : error ? (
@@ -238,9 +245,7 @@ export function NewConversationDialog({
               <div className="flex flex-col items-center justify-center h-32 text-center">
                 <Search className="w-12 h-12 text-gray-300 mb-3" />
                 <p className="text-sm text-gray-500">
-                  連絡先が見つかりません
-                  <br />
-                  Không tìm thấy liên hệ
+                  {t("連絡先が見つかりません", "Không tìm thấy liên hệ")}
                 </p>
               </div>
             ) : (
@@ -313,20 +318,16 @@ export function NewConversationDialog({
         <div className="flex items-center justify-between gap-3 px-6 py-4 border-t bg-gray-50 shrink-0">
           <div className="text-sm text-gray-600">
             {selectedContacts.length === 0 ? (
-              <>
-                <span>メンバーを選択 / Chọn thành viên</span>
-              </>
+              <span>{t("メンバーを選択", "Chọn thành viên")}</span>
             ) : selectedContacts.length === 1 ? (
-              <>
-                <span className="font-medium text-[#4a9d9c]">
-                  1人選択中 / 1 người đã chọn
-                </span>
-              </>
+              <span className="font-medium text-[#4a9d9c]">
+                {t("1人選択中", "1 người đã chọn")}
+              </span>
             ) : (
               <>
                 <Users className="w-4 h-4 inline mr-1 text-[#4a9d9c]" />
                 <span className="font-medium text-[#4a9d9c]">
-                  グループチャット / Group chat ({selectedContacts.length} 人)
+                  {t(`グループチャット (${selectedContacts.length} 人)`, `Chat nhóm (${selectedContacts.length} người)`)}
                 </span>
               </>
             )}
@@ -337,7 +338,7 @@ export function NewConversationDialog({
               onClick={handleClose}
               disabled={isCreating}
             >
-              キャンセル / Hủy
+              {t("キャンセル", "Hủy")}
             </Button>
             <Button
               onClick={handleCreateConversation}
@@ -347,17 +348,17 @@ export function NewConversationDialog({
               {isCreating ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  作成中... / Đang tạo...
+                  {t("作成中...", "Đang tạo...")}
                 </>
               ) : selectedContacts.length <= 1 ? (
                 <>
                   <MessageCircle className="w-4 h-4 mr-2" />
-                  チャット開始 / Bắt đầu
+                  {t("チャット開始", "Bắt đầu")}
                 </>
               ) : (
                 <>
                   <Users className="w-4 h-4 mr-2" />
-                  グループ作成 / Tạo nhóm
+                  {t("グループ作成", "Tạo nhóm")}
                 </>
               )}
             </Button>

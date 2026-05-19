@@ -3,6 +3,16 @@ const tinNhan = require('../models/tinnhan');
 const banDich = require('../models/bandich');
 const phanTichYNghia = require('../models/phantichynghia');
 const { analyzeMessage } = require('./aiService');
+const { translateText } = require('./googleTranslateService');
+
+function detectLanguage(text) {
+  // Biểu thức chính quy phát hiện ký tự tiếng Nhật (Hiragana, Katakana, Kanji)
+  const japaneseRegex = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/;
+  if (japaneseRegex.test(text)) {
+    return 'ja';
+  }
+  return 'vi';
+}
 
 async function xuLyTinNhanMoi({ noi_dung, ma_cuoc_hoi_thoai, ma_nguoi_gui }, io) {
   // 1. Lưu tin nhắn gốc
@@ -12,49 +22,47 @@ async function xuLyTinNhanMoi({ noi_dung, ma_cuoc_hoi_thoai, ma_nguoi_gui }, io)
     noiDung: noi_dung,
   });
 
-  // 2. Broadcast ngay — cả người gửi lẫn người nhận đều nhận được tin nhắn gốc
+  // 1.5. Tự động phát hiện ngôn ngữ nhắn và dịch siêu tốc
+  const ngonNguGoc = detectLanguage(noi_dung);
+  const ngonNguDich = ngonNguGoc === 'vi' ? 'ja' : 'vi';
+  
+  const noiDungDaDich = await translateText(noi_dung, ngonNguGoc, ngonNguDich);
+  
+  // Lưu bản dịch vào DB ngay lập tức
+  await banDich.create({
+    maTinNhan: tinNhanMoi.ma_tin_nhan,
+    noiDungGoc: noi_dung,
+    noiDungDaDich: noiDungDaDich,
+  });
+
+  // 2. Broadcast ngay — cả người gửi lẫn người nhận đều nhận được tin nhắn gốc + bản dịch
   io.to(ma_cuoc_hoi_thoai).emit('receive_message', {
     ...tinNhanMoi,
-    ban_dich: null,
+    ban_dich: [{ noi_dung_da_dich: noiDungDaDich }],
     goi_y: [],
   });
 
-  // 3. AI chạy trong nền, broadcast lần 2 khi xong
-  _xuLyAI(tinNhanMoi.ma_tin_nhan, noi_dung, ma_nguoi_gui)
-    .then((aiData) => {
-      io.to(ma_cuoc_hoi_thoai).emit('message_ai_ready', {
-        ma_tin_nhan: tinNhanMoi.ma_tin_nhan,
-        ban_dich: aiData.ban_dich,
-        sac_thai: aiData.sac_thai,
-        tom_tat_y_dinh: aiData.tom_tat_y_dinh,
-        goi_y: aiData.goi_y,
-      });
-    })
+  // 3. AI chạy trong nền (phân tích sắc thái, ý định, gợi ý), broadcast lần 2 khi xong
+  _xuLyAI(tinNhanMoi.ma_tin_nhan, noi_dung, ngonNguGoc, ma_cuoc_hoi_thoai, io)
     .catch((err) => console.error('[messageService] Lỗi AI:', err.message));
 }
 
-async function _xuLyAI(maTinNhan, noiDung, maNguoiGui) {
-  const { data: nguoiDung } = await supabase
-    .from('nguoi_dung')
-    .select('ma_ngon_ngu')
-    .eq('ma_nguoi_dung', maNguoiGui)
-    .single();
+async function _xuLyAI(maTinNhan, noiDung, ngonNguGoc, maCuocHoiThoai, io) {
+  const aiData = await analyzeMessage(noiDung, ngonNguGoc);
 
-  const ngonNgu = nguoiDung?.ma_ngon_ngu || 'vi';
-  const aiData = await analyzeMessage(noiDung, ngonNgu);
-
-  await banDich.create({
-    maTinNhan,
-    noiDungGoc: noiDung,
-    noiDungDaDich: aiData.ban_dich,
-  });
-
-  if (aiData.sac_thai) {
+  if (aiData.sac_thai || aiData.tom_tat_y_dinh || (aiData.goi_y && aiData.goi_y.length > 0)) {
     await phanTichYNghia.createWithGoiY({
       maTinNhan,
       sacThai: aiData.sac_thai,
       tomTatYDinh: aiData.tom_tat_y_dinh,
       danhSachGoiY: aiData.goi_y,
+    });
+    
+    io.to(maCuocHoiThoai).emit('message_ai_ready', {
+      ma_tin_nhan: maTinNhan,
+      sac_thai: aiData.sac_thai,
+      tom_tat_y_dinh: aiData.tom_tat_y_dinh,
+      goi_y: aiData.goi_y,
     });
   }
 
