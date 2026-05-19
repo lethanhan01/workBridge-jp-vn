@@ -475,7 +475,7 @@ export function ChatPage() {
     return {
       id: msg.ma_tin_nhan || Date.now().toString(),
       text: msg.noi_dung,
-      translatedText: msg.bandich?.[0]?.noi_dung_da_dich || msg.noi_dung,
+      translatedText: msg.bandich?.[0]?.noi_dung_da_dich || msg.ban_dich?.[0]?.noi_dung_da_dich || msg.noi_dung,
       sender: msg.ma_nguoi_gui === user?.id ? "me" : "other",
       timestamp: new Date(msg.time).toLocaleTimeString("ja-JP", {
         hour: "2-digit",
