@@ -28,6 +28,21 @@ interface Contact {
 export function ChatListPage() {
   const { t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState("");
+  
+  const formatConversationName = (name: string) => {
+    if (!name) return "";
+    const prefixJa = "会話：";
+    const prefixVi = "Đoạn chat cùng với ";
+    
+    if (name.startsWith(prefixJa)) {
+      const members = name.substring(prefixJa.length);
+      return t(`会話：${members}`, `Đoạn chat cùng với ${members}`);
+    } else if (name.startsWith(prefixVi)) {
+      const members = name.substring(prefixVi.length);
+      return t(`会話：${members}`, `Đoạn chat cùng với ${members}`);
+    }
+    return name;
+  };
   const [showNewConversation, setShowNewConversation] = useState(false);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -138,7 +153,7 @@ export function ChatListPage() {
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-2">
                       <span className="font-medium truncate">
-                        {contact.name}
+                        {formatConversationName(contact.name)}
                       </span>
                       <Badge
                         variant="outline"

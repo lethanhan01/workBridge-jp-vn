@@ -426,6 +426,22 @@ const allContacts = [
 
 export function ChatPage() {
   const { t, language } = useLanguage();
+  
+  const formatConversationName = (name: string) => {
+    if (!name) return "";
+    const prefixJa = "会話：";
+    const prefixVi = "Đoạn chat cùng với ";
+    
+    if (name.startsWith(prefixJa)) {
+      const members = name.substring(prefixJa.length);
+      return t(`会話：${members}`, `Đoạn chat cùng với ${members}`);
+    } else if (name.startsWith(prefixVi)) {
+      const members = name.substring(prefixVi.length);
+      return t(`会話：${members}`, `Đoạn chat cùng với ${members}`);
+    }
+    return name;
+  };
+
   const { contactId } = useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -459,7 +475,7 @@ export function ChatPage() {
     return {
       id: msg.ma_tin_nhan || Date.now().toString(),
       text: msg.noi_dung,
-      translatedText: msg.bandich?.[0]?.noi_dung_da_dich || msg.noi_dung,
+      translatedText: msg.bandich?.[0]?.noi_dung_da_dich || msg.ban_dich?.[0]?.noi_dung_da_dich || msg.noi_dung,
       sender: msg.ma_nguoi_gui === user?.id ? "me" : "other",
       timestamp: new Date(msg.time).toLocaleTimeString("ja-JP", {
         hour: "2-digit",
@@ -489,12 +505,25 @@ export function ChatPage() {
     });
 
     // Listen for AI analysis ready
-    const unsubscribeAiReady = socketService.onMessageAiReady((msg) => {
-      if (msg.ma_cuoc_hoi_thoai === contactId) {
-        setMessages(prev => prev.map(m => 
-          m.id === msg.ma_tin_nhan ? mapBackendMessage(msg) : m
-        ));
-      }
+    const unsubscribeAiReady = socketService.onMessageAiReady((aiUpdate) => {
+      setMessages(prev => prev.map(m => {
+        if (m.id === aiUpdate.ma_tin_nhan) {
+          const suggestions: Suggestion[] = aiUpdate.goi_y?.map((s: any) => ({
+            viText: s.tieng_viet || s.noi_dung_tieng_viet,
+            jpText: s.tieng_nhat || s.noi_dung_tieng_nhat,
+            score: s.muc_do || s.muc_do_phu_hop || 3,
+          })) || [];
+          
+          return {
+            ...m,
+            intent: aiUpdate.tom_tat_y_dinh,
+            tone: aiUpdate.sac_thai,
+            suggestions: suggestions.length > 0 ? suggestions : undefined,
+            analysisReady: true,
+          };
+        }
+        return m;
+      }));
     });
 
     // Fetch initial messages and conversation info
@@ -597,7 +626,8 @@ export function ChatPage() {
   };
 
   const handleSelectReplySuggestion = (suggestion: any) => {
-    setNewMessage(suggestion.text);
+    const selectedText = language === "ja" ? suggestion.text : suggestion.translation;
+    setNewMessage(selectedText);
     inputRef.current?.focus();
   };
 
@@ -708,7 +738,9 @@ export function ChatPage() {
                 variant={showTranslation ? "default" : "outline"}
                 size="sm"
                 onClick={() => setShowTranslation(!showTranslation)}
-                className="bg-[#4a9d9c] hover:bg-[#3d8887] text-white"
+                className={showTranslation 
+                  ? "bg-[#4a9d9c] hover:bg-[#3d8887] text-white" 
+                  : "border-[#4a9d9c] text-[#4a9d9c] hover:bg-gray-50 bg-transparent"}
               >
                 <Languages className="w-4 h-4 mr-2" />
                 {t("翻訳", "Dịch")}
@@ -729,7 +761,7 @@ export function ChatPage() {
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <h2 className="font-medium truncate">{conversationName || "Conversation"}</h2>
+                  <h2 className="font-medium truncate">{formatConversationName(conversationName) || "Conversation"}</h2>
                   <Badge
                     variant="outline"
                     className="bg-red-50 text-red-700 border-red-200"
@@ -747,7 +779,9 @@ export function ChatPage() {
                 variant={showTranslation ? "default" : "outline"}
                 size="sm"
                 onClick={() => setShowTranslation(!showTranslation)}
-                className="bg-[#4a9d9c] hover:bg-[#3d8887] text-white"
+                className={showTranslation 
+                  ? "bg-[#4a9d9c] hover:bg-[#3d8887] text-white" 
+                  : "border-[#4a9d9c] text-[#4a9d9c] hover:bg-gray-50 bg-transparent"}
               >
                 <Languages className="w-4 h-4 mr-2" />
                 {t("翻訳", "Dịch")}
@@ -779,16 +813,18 @@ export function ChatPage() {
                 >
                   <p className="text-sm whitespace-pre-wrap">{message.text}</p>
                   
-                  {/* Translation shown by default */}
-                  <p
-                    className={`text-xs mt-2 pt-2 border-t ${
-                      message.sender === "me"
-                        ? "border-blue-400 text-blue-100"
-                        : "border-gray-200 text-gray-600"
-                    }`}
-                  >
-                    {message.translatedText}
-                  </p>
+                  {/* Translation shown based on showTranslation state */}
+                  {showTranslation && (
+                    <p
+                      className={`text-xs mt-2 pt-2 border-t ${
+                        message.sender === "me"
+                          ? "border-blue-400 text-blue-100"
+                          : "border-gray-200 text-gray-600"
+                      }`}
+                    >
+                      {message.translatedText}
+                    </p>
+                  )}
 
                   {/* Tone badge */}
                   {message.tone && (
@@ -1017,6 +1053,10 @@ export function ChatPage() {
         <MessageIntentDialog
           message={selectedMessageForIntent}
           onClose={() => setSelectedMessageForIntent(null)}
+          onSelectSuggestion={(text) => {
+            setNewMessage(text);
+            inputRef.current?.focus();
+          }}
         />
       )}
     </div>
