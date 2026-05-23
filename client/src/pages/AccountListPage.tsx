@@ -28,6 +28,10 @@ import {
 } from "../components/ui/select";
 import { Search, UserPlus, Filter, Eye } from "lucide-react";
 import { useLanguage } from "../utils/contexts/LanguageContext";
+import {
+  AddAccountDialog,
+  type NewAccountInput,
+} from "../components/account/AddAccountDialog";
 
 interface Account {
   id: string;
@@ -128,8 +132,10 @@ export function AccountListPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [nationalityFilter, setNationalityFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [accounts, setAccounts] = useState(mockAccounts);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
-  const filteredAccounts = mockAccounts.filter((account) => {
+  const filteredAccounts = accounts.filter((account) => {
     const matchesSearch =
       account.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       account.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -144,6 +150,22 @@ export function AccountListPage() {
     return matchesSearch && matchesNationality && matchesStatus;
   });
 
+  const handleAddAccount = (newAccount: NewAccountInput) => {
+    setAccounts((currentAccounts) => [
+      {
+        id: `${Date.now()}`,
+        name: newAccount.name,
+        email: newAccount.email,
+        department: newAccount.department,
+        nationality: newAccount.nationality,
+        position: newAccount.position,
+        status: "active",
+        lastActive: t("たった今", "Vừa xong"),
+      },
+      ...currentAccounts,
+    ]);
+  };
+
   return (
     <div className="h-full overflow-y-auto bg-gray-50 p-4 md:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -157,7 +179,7 @@ export function AccountListPage() {
               {t("組織内のユーザーを管理", "Quản lý người dùng trong tổ chức")}
             </p>
           </div>
-          <Button>
+          <Button onClick={() => setIsAddDialogOpen(true)}>
             <UserPlus className="w-4 h-4 mr-2" />
             {t("追加", "Thêm")}
           </Button>
@@ -327,6 +349,12 @@ export function AccountListPage() {
             </div>
           </CardContent>
         </Card>
+
+        <AddAccountDialog
+          open={isAddDialogOpen}
+          onClose={() => setIsAddDialogOpen(false)}
+          onAdd={handleAddAccount}
+        />
       </div>
     </div>
   );
