@@ -9,6 +9,8 @@ import { NewConversationDialog } from "../components/chat/NewConversationDialog"
 import { useLanguage } from "../utils/contexts/LanguageContext";
 import { chatApi } from "../api/chatApi";
 import { useEffect } from "react";
+import { formatDistanceToNow } from "date-fns";
+import { vi, ja } from "date-fns/locale";
 
 
 interface Contact {
@@ -26,7 +28,7 @@ interface Contact {
 
 
 export function ChatListPage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [searchQuery, setSearchQuery] = useState("");
   
   const formatConversationName = (name: string) => {
@@ -60,9 +62,9 @@ export function ChatListPage() {
             nameJp: conv.ten_cuoc_hoi_thoai || "Conversation",
             nameVn: conv.ten_cuoc_hoi_thoai || "Conversation",
             avatar: "",
-            lastMessage: "Click to view chat",
-            lastMessageTime: conv.ngay_tao ? new Date(conv.ngay_tao).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "",
-            unreadCount: 0,
+            lastMessage: conv.lastMessage || t("まだメッセージがありません", "Chưa có tin nhắn"),
+            lastMessageTime: conv.lastMessageTime || conv.ngay_tao,
+            unreadCount: conv.unreadCount || 0,
             nationality: "vietnam", // Mặc định vì backend chưa trả về nationality của partner
             isOnline: false,
           }));
@@ -167,7 +169,11 @@ export function ChatListPage() {
                       </Badge>
                     </div>
                     <span className="text-xs text-gray-500 whitespace-nowrap ml-2">
-                      {contact.lastMessageTime}
+                      {contact.lastMessageTime
+                        ? formatDistanceToNow(new Date(contact.lastMessageTime), {
+                            locale: language === "ja" ? ja : vi,
+                          }) + (language === "ja" ? "前" : " trước")
+                        : ""}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">

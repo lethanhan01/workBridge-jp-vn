@@ -36,6 +36,7 @@ interface MessageIntentDialogProps {
 export function MessageIntentDialog({
   message,
   onClose,
+  onSelectSuggestion,
 }: MessageIntentDialogProps) {
   const { t, language } = useLanguage();
 

@@ -8,7 +8,7 @@ import {
   Menu,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "../components/ui/button";
 import { useAuth } from "../utils/contexts/AuthContext";
 import { useLanguage } from "../utils/contexts/LanguageContext";
@@ -27,8 +27,22 @@ export function MainLayout() {
     navigate("/login");
   };
 
+  // Redirect admin users trying to access the default app index (ChatListPage)
+  useEffect(() => {
+    if (isAdmin && location.pathname === "/app") {
+      navigate("/app/accounts", { replace: true });
+    }
+  }, [isAdmin, location.pathname, navigate]);
+
+  type NavItem = {
+    path: string;
+    icon: any;
+    label: string;
+    exact?: boolean;
+  };
+
   // Navigation items based on role
-  const userNavItems = [
+  const userNavItems: NavItem[] = [
     {
       path: "/app",
       icon: MessageSquare,
@@ -47,7 +61,7 @@ export function MainLayout() {
     },
   ];
 
-  const adminNavItems = [
+  const adminNavItems: NavItem[] = [
     {
       path: "/app/accounts",
       icon: Users,
@@ -55,7 +69,7 @@ export function MainLayout() {
     },
   ];
 
-  const navItems = isAdmin ? adminNavItems : userNavItems;
+  const navItems: NavItem[] = isAdmin ? adminNavItems : userNavItems;
 
   const isActive = (path: string, exact?: boolean) => {
     if (exact) {

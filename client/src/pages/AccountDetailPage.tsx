@@ -1,5 +1,9 @@
 import { useParams, useNavigate } from "react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { userApi } from "../api/userApi";
+import { toast } from "sonner";
+import { formatDistanceToNow } from "date-fns";
+import { vi, ja } from "date-fns/locale";
 import { Button } from "../components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
 import { Badge } from "../components/ui/badge";
@@ -41,6 +45,7 @@ import {
   EyeOff,
   Lock,
   User,
+  Clock,
 } from "lucide-react";
 import { useLanguage } from "../utils/contexts/LanguageContext";
 
@@ -49,16 +54,23 @@ interface Account {
   name: string;
   email: string;
   department: string;
+  department_jp?: string;
   nationality: "japan" | "vietnam";
   gender: "male" | "female" | "other";
   password: string;
   position: string;
+  position_jp?: string;
   status: "active" | "inactive";
   joinDate: string;
   lastActive: string;
+  isOnline?: boolean;
+  lastActiveDate?: string;
   messageCount: number;
   translationCount: number;
+  partnersCount: number;
   language: string;
+  role?: "admin" | "user";
+  recentActivity: any[];
 }
 
 const mockAccount: Account = {
@@ -75,63 +87,111 @@ const mockAccount: Account = {
   lastActive: "2分前",
   messageCount: 1234,
   translationCount: 856,
+  partnersCount: 150,
   language: "日本語 / Tiếng Nhật",
+  recentActivity: [],
 };
 
-const recentActivity = [
-  {
-    id: "1",
-    type: "message",
-    description: "Nguyễn Văn Anとメッセージを交換しました",
-    descriptionVn: "Đã trao đổi tin nhắn với Nguyễn Văn An",
-    time: "2分前",
-  },
-  {
-    id: "2",
-    type: "translation",
-    description: "10件のメッセージを翻訳しました",
-    descriptionVn: "Đã dịch 10 tin nhắn",
-    time: "15分前",
-  },
-  {
-    id: "3",
-    type: "dictionary",
-    description: '辞書に「納期」を追加しました',
-    descriptionVn: 'Đã thêm "Hạn giao hàng" vào từ điển',
-    time: "1時間前",
-  },
-  {
-    id: "4",
-    type: "message",
-    description: "Trần Thị Maiとチャットを開始しました",
-    descriptionVn: "Đã bắt đầu chat với Trần Thị Mai",
-    time: "2時間前",
-  },
-];
+// Xóa mock recentActivity ở đây vì đã lấy từ API
 
 export function AccountDetailPage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { accountId } = useParams();
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
-  const [editedAccount, setEditedAccount] = useState(mockAccount);
+  const [account, setAccount] = useState<Account | null>(null);
+  const [editedAccount, setEditedAccount] = useState<Account | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showEditPassword, setShowEditPassword] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 60000); // Cập nhật mỗi phút
+    return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!accountId) return;
+    const fetchUser = async () => {
+      try {
+        const data = await userApi.getUserById(accountId);
+        const formattedAccount: Account = {
+          id: data.ma_nguoi_dung,
+          name: data.ten || data.ten_dang_nhap || "No Name",
+          email: data.email,
+          department: data.phong_ban || "",
+          department_jp: data.phong_ban_jp || "",
+          nationality: data.ma_ngon_ngu === "ja" ? "japan" : "vietnam",
+          gender: "other",
+          password: "••••••••", // Không lưu trữ mật khẩu rõ trên frontend
+          position: data.chuc_vu || "",
+          position_jp: data.chuc_vu_jp || "",
+          status: "active",
+          joinDate: "",
+          lastActive: "",
+          isOnline: data.trang_thai_online || false,
+          lastActiveDate: data.lan_cuoi_hoat_dong || null,
+          messageCount: data.messageCount || 0,
+          translationCount: data.translationCount || 0,
+          partnersCount: data.partnersCount || 0,
+          language: data.ma_ngon_ngu === "ja" ? "日本語 / Tiếng Nhật" : "Tiếng Việt / ベトナム語",
+          role: data.vai_tro && data.vai_tro.ten_vai_tro && data.vai_tro.ten_vai_tro.trim() === "admin" ? "admin" : "user",
+          recentActivity: data.recentActivity || [],
+        };
+        setAccount(formattedAccount);
+        setEditedAccount(formattedAccount);
+      } catch (err) {
+        console.error("Failed to load account details", err);
+      }
+    };
+    fetchUser();
+  }, [accountId]);
 
   const handleEdit = () => {
     setIsEditing(true);
   };
 
-  const handleSave = () => {
-    setIsEditing(false);
-    // Here you would typically send the editedAccount to the server
-    console.log("Edited Account:", editedAccount);
+  const handleToggleRole = async () => {
+    if (!account) return;
+    const newRole = account.role === "admin" ? "user" : "admin";
+    try {
+      await userApi.updateUserAdmin(account.id, { role: newRole });
+      setAccount({ ...account, role: newRole });
+      toast.success(t("権限を更新しました", "Đã cập nhật quyền thành công"));
+    } catch (error) {
+      console.error("Toggle role error:", error);
+      toast.error(t("エラーが発生しました", "Đã xảy ra lỗi khi cập nhật quyền"));
+    }
+  };
+
+  const handleSave = async () => {
+    try {
+      if (accountId && editedAccount) {
+        await userApi.updateUserAdmin(accountId, {
+          phong_ban: editedAccount.department,
+          chuc_vu: editedAccount.position,
+          input_language: language
+        });
+        
+        // Cần fetch lại hoặc tự giả định ngôn ngữ để cập nhật lại state.
+        // Tạm thời gọi lại fetchUser hoặc reload.
+        window.location.reload();
+        toast.success(t("保存しました", "Đã lưu thành công"));
+      }
+    } catch (error) {
+      console.error("Save error:", error);
+      toast.error(t("エラーが発生しました", "Đã xảy ra lỗi"));
+    }
   };
 
   const handleCancel = () => {
     setIsEditing(false);
-    setEditedAccount(mockAccount);
+    setEditedAccount(account);
   };
+
+  if (!account || !editedAccount) {
+    return <div className="p-8 text-center">{t("読み込み中...", "Đang tải...")}</div>;
+  }
 
   return (
     <div className="h-full overflow-y-auto bg-gray-50 p-4 md:p-8">
@@ -153,77 +213,78 @@ export function AccountDetailPage() {
               <Avatar className="w-24 h-24">
                 <AvatarImage src="" />
                 <AvatarFallback className="text-2xl">
-                  {mockAccount.name.charAt(0)}
+                  {account.name.charAt(0)}
                 </AvatarFallback>
               </Avatar>
 
               <div className="flex-1">
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
                   <div>
-                    <h2 className="text-2xl mb-1">{mockAccount.name}</h2>
-                    <p className="text-gray-600">{mockAccount.position}</p>
+                    <h2 className="text-2xl mb-1">{account.name}</h2>
+                    <p className="text-gray-600">{language === 'ja' ? (account.position_jp || account.position) : account.position}</p>
                   </div>
                   <div className="flex items-center gap-2 mt-2 md:mt-0">
                     <Badge
                       variant="outline"
                       className={
-                        mockAccount.nationality === "japan"
+                        account.nationality === "japan"
                           ? "bg-red-50 text-red-700 border-red-200"
                           : "bg-yellow-50 text-yellow-700 border-yellow-200"
                       }
                     >
-                      {mockAccount.nationality === "japan"
+                      {account.nationality === "japan"
                         ? "🇯🇵 日本"
                         : "🇻🇳 ベトナム"}
                     </Badge>
-                    <Badge
-                      variant={
-                        mockAccount.status === "active" ? "default" : "secondary"
-                      }
-                      className={
-                        mockAccount.status === "active"
-                          ? "bg-green-100 text-green-700"
-                          : "bg-gray-100 text-gray-700"
-                      }
-                    >
-                      {mockAccount.status === "active"
-                        ? t("アクティブ", "Hoạt động")
-                        : t("非アクティブ", "Không hoạt động")}
-                    </Badge>
+                    {account.isOnline ? (
+                      <Badge
+                        variant="outline"
+                        className="bg-green-100 text-green-700 border-green-200"
+                      >
+                        {t("オンライン", "Đang hoạt động")}
+                      </Badge>
+                    ) : (
+                      <Badge
+                        variant="outline"
+                        className="bg-gray-100 text-gray-700 border-gray-200"
+                      >
+                        {t("オフライン", "Không hoạt động")}
+                      </Badge>
+                    )}
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                   <div className="flex items-center gap-2 text-gray-600">
                     <Mail className="w-4 h-4" />
-                    <span>{mockAccount.email}</span>
+                    <span>{account.email}</span>
                   </div>
                   <div className="flex items-center gap-2 text-gray-600">
                     <Building className="w-4 h-4" />
-                    <span>{mockAccount.department}</span>
+                    <span>{language === 'ja' ? (account.department_jp || account.department) : account.department}</span>
                   </div>
                   <div className="flex items-center gap-2 text-gray-600">
                     <Briefcase className="w-4 h-4" />
-                    <span>{mockAccount.position}</span>
+                    <span>{language === 'ja' ? (account.position_jp || account.position) : account.position}</span>
                   </div>
                   <div className="flex items-center gap-2 text-gray-600">
                     <User className="w-4 h-4" />
                     <span>
-                      {mockAccount.gender === "male"
+                      {account.gender === "male"
                         ? t("男性", "Nam")
-                        : mockAccount.gender === "female"
+                        : account.gender === "female"
                         ? t("女性", "Nữ")
                         : t("その他", "Khác")}
                     </span>
                   </div>
                   <div className="flex items-center gap-2 text-gray-600">
                     <Globe className="w-4 h-4" />
-                    <span>{mockAccount.language}</span>
+                    <span>{account.language}</span>
                   </div>
                   <div className="flex items-center gap-2 text-gray-600">
                     <Lock className="w-4 h-4" />
                     <span className="flex items-center gap-2">
-                      {showPassword ? mockAccount.password : "••••••••"}
+                      {showPassword ? account.password : "••••••••"}
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
@@ -240,13 +301,17 @@ export function AccountDetailPage() {
                   <div className="flex items-center gap-2 text-gray-600">
                     <Calendar className="w-4 h-4" />
                     <span>
-                      {t("入社日", "Ngày vào")}: {mockAccount.joinDate}
+                      {t("入社日", "Ngày vào")}: {account.joinDate}
                     </span>
                   </div>
                   <div className="flex items-center gap-2 text-gray-600">
-                    <Activity className="w-4 h-4" />
+                    <Clock className="w-4 h-4" />
                     <span>
-                      {t("最終アクティブ", "Hoạt động")}: {mockAccount.lastActive}
+                      {account.lastActiveDate ? (
+                        formatDistanceToNow(new Date(account.lastActiveDate), { locale: language === "ja" ? ja : vi })
+                      ) : (
+                        t("不明", "Chưa rõ")
+                      )}
                     </span>
                   </div>
                 </div>
@@ -271,7 +336,7 @@ export function AccountDetailPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl">{mockAccount.messageCount}</p>
+              <p className="text-3xl">{account.messageCount}</p>
               <p className="text-sm text-gray-500 mt-1">
                 {t("送信したメッセージの総数", "Tổng số tin nhắn đã gửi")}
               </p>
@@ -283,7 +348,7 @@ export function AccountDetailPage() {
               <CardTitle className="text-base">{t("翻訳数", "Bản dịch")}</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl">{mockAccount.translationCount}</p>
+              <p className="text-3xl">{account.translationCount}</p>
               <p className="text-sm text-gray-500 mt-1">
                 {t("翻訳したメッセージの総数", "Tổng số tin nhắn đã dịch")}
               </p>
@@ -297,9 +362,9 @@ export function AccountDetailPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl">12</p>
+              <p className="text-3xl">{account.partnersCount}</p>
               <p className="text-sm text-gray-500 mt-1">
-                {t("アクティブな会話の数", "Số cuộc trò chuyện đang hoạt động")}
+                {t("アクティブな会話の数", "Tổng số người dùng")}
               </p>
             </CardContent>
           </Card>
@@ -315,39 +380,58 @@ export function AccountDetailPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {recentActivity.map((activity) => (
-                <div
-                  key={activity.id}
-                  className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg"
-                >
-                  <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                      activity.type === "message"
-                        ? "bg-blue-100"
-                        : activity.type === "translation"
-                        ? "bg-green-100"
-                        : "bg-purple-100"
-                    }`}
-                  >
-                    {activity.type === "message" ? (
-                      <MessageSquare className="w-5 h-5 text-blue-600" />
-                    ) : activity.type === "translation" ? (
-                      <Globe className="w-5 h-5 text-green-600" />
-                    ) : (
-                      <Building className="w-5 h-5 text-purple-600" />
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm">{activity.description}</p>
-                    <p className="text-xs text-gray-600">
-                      {activity.descriptionVn}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {activity.time}
-                    </p>
-                  </div>
+              {account.recentActivity && account.recentActivity.length > 0 ? (
+                account.recentActivity.map((activity) => {
+                  let relativeTime = activity.time;
+                  try {
+                    const diffMs = Date.now() - new Date(activity.time).getTime();
+                    const diffMins = Math.floor(diffMs / 60000);
+                    const diffHours = Math.floor(diffMins / 60);
+                    const diffDays = Math.floor(diffHours / 24);
+                    if (diffMins < 60) relativeTime = `${diffMins} ${t("分前", "phút trước")}`;
+                    else if (diffHours < 24) relativeTime = `${diffHours} ${t("時間前", "giờ trước")}`;
+                    else relativeTime = `${diffDays} ${t("日前", "ngày trước")}`;
+                  } catch (e) {}
+
+                  return (
+                    <div
+                      key={activity.id}
+                      className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg"
+                    >
+                      <div
+                        className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                          activity.type === "message"
+                            ? "bg-blue-100"
+                            : activity.type === "translation"
+                            ? "bg-green-100"
+                            : "bg-purple-100"
+                        }`}
+                      >
+                        {activity.type === "message" ? (
+                          <MessageSquare className="w-5 h-5 text-blue-600" />
+                        ) : activity.type === "translation" ? (
+                          <Globe className="w-5 h-5 text-green-600" />
+                        ) : (
+                          <Building className="w-5 h-5 text-purple-600" />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm">{activity.description}</p>
+                        <p className="text-xs text-gray-600">
+                          {activity.descriptionVn}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {relativeTime}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="text-center text-gray-500 py-4">
+                  {t("最近のアクティビティはありません", "Chưa có hoạt động nào gần đây")}
                 </div>
-              ))}
+              )}
             </div>
           </CardContent>
         </Card>
@@ -393,7 +477,14 @@ export function AccountDetailPage() {
                     {t("システム設定を変更できます", "Có thể thay đổi cài đặt hệ thống")}
                   </p>
                 </div>
-                <Badge className="bg-gray-200 text-gray-700">{t("未許可", "Chưa cho phép")}</Badge>
+                <div className="flex items-center gap-2">
+                  <Badge 
+                    className={`cursor-pointer transition-colors ${account.role === "admin" ? "bg-green-100 text-green-700 hover:bg-green-200" : "bg-gray-200 text-gray-700 hover:bg-gray-300"}`}
+                    onClick={handleToggleRole}
+                  >
+                    {account.role === "admin" ? t("許可済", "Đã cho phép") : t("未許可", "Chưa cho phép")}
+                  </Badge>
+                </div>
               </div>
             </div>
           </CardContent>

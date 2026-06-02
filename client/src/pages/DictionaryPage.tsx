@@ -25,253 +25,9 @@ interface DictionaryEntry {
   isFavorite: boolean;
 }
 
-const mockDictionary: DictionaryEntry[] = [
-  {
-    id: "1",
-    termJp: "納期",
-    termVn: "Hạn giao hàng",
-    category: "ビジネス / Kinh doanh",
-    definitionJp: "商品やサービスを納める期日",
-    definitionVn: "Thời hạn giao sản phẩm hoặc dịch vụ",
-    exampleJp: "納期は来週の金曜日です。",
-    exampleVn: "Hạn giao hàng là thứ Sáu tuần sau.",
-    isFavorite: true,
-  },
-  {
-    id: "2",
-    termJp: "見積もり",
-    termVn: "Báo giá",
-    category: "ビジネス / Kinh doanh",
-    definitionJp: "商品やサービスの価格を事前に計算して提示すること",
-    definitionVn:
-      "Tính toán và đưa ra giá của sản phẩm hoặc dịch vụ trước",
-    exampleJp: "見積もりを送っていただけますか？",
-    exampleVn: "Bạn có thể gửi báo giá cho tôi không?",
-    isFavorite: false,
-  },
-  {
-    id: "3",
-    termJp: "検証",
-    termVn: "Kiểm tra",
-    category: "IT / Công nghệ thông tin",
-    definitionJp: "正しいかどうかを確認すること",
-    definitionVn: "Xác nhận xem có đúng hay không",
-    exampleJp: "コードの検証を行います。",
-    exampleVn: "Tiến hành kiểm tra mã.",
-    isFavorite: true,
-  },
-  {
-    id: "4",
-    termJp: "リリース",
-    termVn: "Phát hành",
-    category: "IT / Công nghệ thông tin",
-    definitionJp: "ソフトウェアやアプリケーションを公開すること",
-    definitionVn: "Công bố phần mềm hoặc ứng dụng",
-    exampleJp: "新バージョンを来月リリースします。",
-    exampleVn: "Phát hành phiên bản mới vào tháng sau.",
-    isFavorite: false,
-  },
-  {
-    id: "5",
-    termJp: "稟議",
-    termVn: "Trình duyệt",
-    category: "ビジネス / Kinh doanh",
-    definitionJp: "会社の意思決定のために上司や関係者に許可を求めること",
-    definitionVn:
-      "Xin phép cấp trên hoặc người liên quan để đưa ra quyết định trong công ty",
-    exampleJp: "稟議書を提出しました。",
-    exampleVn: "Tôi đã nộp đơn trình duyệt.",
-    isFavorite: false,
-  },
-  {
-    id: "6",
-    termJp: "工数",
-    termVn: "Công sức",
-    category: "プロジェクト管理 / Quản lý dự án",
-    definitionJp: "作業に必要な人数と時間の量",
-    definitionVn: "Lượng người và thời gian cần thiết cho công việc",
-    exampleJp: "この作業の工数は3人日です。",
-    exampleVn: "Công sức cho công việc này là 3 người-ngày.",
-    isFavorite: true,
-  },
-  {
-    id: "7",
-    termJp: "カルテ",
-    termVn: "Hồ sơ bệnh án",
-    category: "医療 / Y tế",
-    definitionJp: "患者の病歴や治療記録を記したもの",
-    definitionVn: "Bản ghi chép lịch sử bệnh và điều trị của bệnh nhân",
-    exampleJp: "カルテを確認してください。",
-    exampleVn: "Vui lòng kiểm tra hồ sơ bệnh án.",
-    isFavorite: false,
-  },
-  {
-    id: "8",
-    termJp: "投薬",
-    termVn: "Kê đơn thuốc",
-    category: "医療 / Y tế",
-    definitionJp: "患者に薬を処方すること",
-    definitionVn: "Kê đơn thuốc cho bệnh nhân",
-    exampleJp: "投薬の記録を更新しました。",
-    exampleVn: "Đã cập nhật hồ sơ kê đơn thuốc.",
-    isFavorite: true,
-  },
-  {
-    id: "9",
-    termJp: "在庫",
-    termVn: "Hàng tồn kho",
-    category: "製造・物流 / Sản xuất & Logistics",
-    definitionJp: "保管されている商品や材料",
-    definitionVn: "Sản phẩm hoặc nguyên liệu được lưu trữ",
-    exampleJp: "在庫を確認してください。",
-    exampleVn: "Vui lòng kiểm tra hàng tồn kho.",
-    isFavorite: false,
-  },
-  {
-    id: "10",
-    termJp: "出荷",
-    termVn: "Xuất hàng",
-    category: "製造・物流 / Sản xuất & Logistics",
-    definitionJp: "商品を送り出すこと",
-    definitionVn: "Gửi sản phẩm đi",
-    exampleJp: "明日出荷予定です。",
-    exampleVn: "Dự kiến xuất hàng vào ngày mai.",
-    isFavorite: false,
-  },
-  {
-    id: "11",
-    termJp: "設計図",
-    termVn: "Bản thiết kế",
-    category: "建設・設計 / Xây dựng & Thiết kế",
-    definitionJp: "建物や製品の詳細な計画図",
-    definitionVn: "Bản vẽ chi tiết của công trình hoặc sản phẩm",
-    exampleJp: "設計図を修正します。",
-    exampleVn: "Sẽ chỉnh sửa bản thiết kế.",
-    isFavorite: false,
-  },
-  {
-    id: "12",
-    termJp: "施工",
-    termVn: "Thi công",
-    category: "建設・設計 / Xây dựng & Thiết kế",
-    definitionJp: "建設工事を実際に行うこと",
-    definitionVn: "Thực hiện công trình xây dựng",
-    exampleJp: "来週から施工を開始します。",
-    exampleVn: "Sẽ bắt đầu thi công từ tuần sau.",
-    isFavorite: true,
-  },
-  {
-    id: "13",
-    termJp: "決算",
-    termVn: "Quyết toán",
-    category: "会計・財務 / Kế toán & Tài chính",
-    definitionJp: "会計年度の収支を確定すること",
-    definitionVn: "Xác định thu chi trong năm tài chính",
-    exampleJp: "決算書を作成中です。",
-    exampleVn: "Đang lập báo cáo quyết toán.",
-    isFavorite: false,
-  },
-  {
-    id: "14",
-    termJp: "請求書",
-    termVn: "Hóa đơn",
-    category: "会計・財務 / Kế toán & Tài chính",
-    definitionJp: "代金の支払いを求める書類",
-    definitionVn: "Chứng từ yêu cầu thanh toán",
-    exampleJp: "請求書を発行しました。",
-    exampleVn: "Đã phát hành hóa đơn.",
-    isFavorite: true,
-  },
-  {
-    id: "15",
-    termJp: "売上",
-    termVn: "Doanh số",
-    category: "営業・販売 / Bán hàng & Kinh doanh",
-    definitionJp: "商品やサービスを販売して得た金額",
-    definitionVn: "Số tiền thu được từ bán sản phẩm hoặc dịch vụ",
-    exampleJp: "今月の売上が目標を超えました。",
-    exampleVn: "Doanh số tháng này đã vượt mục tiêu.",
-    isFavorite: false,
-  },
-  {
-    id: "16",
-    termJp: "顧客",
-    termVn: "Khách hàng",
-    category: "営業・販売 / Bán hàng & Kinh doanh",
-    definitionJp: "商品やサービスを購入する人や企業",
-    definitionVn: "Người hoặc công ty mua sản phẩm hoặc dịch vụ",
-    exampleJp: "顧客のニーズに応えます。",
-    exampleVn: "Đáp ứng nhu cầu của khách hàng.",
-    isFavorite: true,
-  },
-  {
-    id: "17",
-    termJp: "診察",
-    termVn: "Khám bệnh",
-    category: "医療 / Y tế",
-    definitionJp: "医師が患者の病状を調べること",
-    definitionVn: "Bác sĩ kiểm tra tình trạng bệnh của bệnh nhân",
-    exampleJp: "診察室でお待ちください。",
-    exampleVn: "Vui lòng đợi tại phòng khám.",
-    isFavorite: false,
-  },
-  {
-    id: "18",
-    termJp: "処方箋",
-    termVn: "Đơn thuốc",
-    category: "医療 / Y tế",
-    definitionJp: "医師が薬の種類や量を指示する文書",
-    definitionVn: "Văn bản bác sĩ chỉ định loại và liều lượng thuốc",
-    exampleJp: "処方箋を薬局に提出してください。",
-    exampleVn: "Vui lòng nộp đơn thuốc tại hiệu thuốc.",
-    isFavorite: false,
-  },
-  {
-    id: "19",
-    termJp: "バグ",
-    termVn: "Lỗi",
-    category: "IT / Công nghệ thông tin",
-    definitionJp: "プログラムの不具合や誤り",
-    definitionVn: "Sự cố hoặc lỗi trong chương trình",
-    exampleJp: "バグを修正しました。",
-    exampleVn: "Đã sửa lỗi.",
-    isFavorite: true,
-  },
-  {
-    id: "20",
-    termJp: "デプロイ",
-    termVn: "Triển khai",
-    category: "IT / Công nghệ thông tin",
-    definitionJp: "システムを本番環境に配置すること",
-    definitionVn: "Đưa hệ thống lên môi trường thực tế",
-    exampleJp: "本日デプロイを実施します。",
-    exampleVn: "Hôm nay sẽ thực hiện triển khai.",
-    isFavorite: false,
-  },
-  {
-    id: "21",
-    termJp: "調達",
-    termVn: "Mua sắm",
-    category: "製造・物流 / Sản xuất & Logistics",
-    definitionJp: "必要な物資や材料を購入すること",
-    definitionVn: "Mua vật tư hoặc nguyên liệu cần thiết",
-    exampleJp: "部品の調達を開始します。",
-    exampleVn: "Bắt đầu mua sắm linh kiện.",
-    isFavorite: false,
-  },
-  {
-    id: "22",
-    termJp: "品質管理",
-    termVn: "Quản lý chất lượng",
-    category: "製造・物流 / Sản xuất & Logistics",
-    definitionJp: "製品の品質を維持・向上させる活動",
-    definitionVn: "Hoạt động duy trì và cải thiện chất lượng sản phẩm",
-    exampleJp: "品質管理を強化します。",
-    exampleVn: "Tăng cường quản lý chất lượng.",
-    isFavorite: true,
-  },
-];
-
+import { useEffect } from "react";
+import { dictionaryApi } from "../api/dictionaryApi";
+import { toast } from "sonner";
 const categoryData = [
   { key: "all", ja: "すべて", vi: "Tất cả" },
   { key: "business", ja: "ビジネス", vi: "Kinh doanh" },
@@ -288,7 +44,25 @@ export function DictionaryPage() {
   const { t, language } = useLanguage();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
-  const [dictionary, setDictionary] = useState(mockDictionary);
+  const [dictionary, setDictionary] = useState<DictionaryEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchDictionary();
+  }, []);
+
+  const fetchDictionary = async () => {
+    try {
+      setLoading(true);
+      const data = await dictionaryApi.getAll();
+      setDictionary(data);
+    } catch (error) {
+      console.error("Lỗi lấy danh sách từ điển:", error);
+      toast.error(t("辞書の取得に失敗しました", "Lỗi lấy danh sách từ điển"));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getCategoryKey = (category: string) => {
     const categoryMap: { [key: string]: string } = {
@@ -320,12 +94,24 @@ export function DictionaryPage() {
 
   const favoriteEntries = dictionary.filter((entry) => entry.isFavorite);
 
-  const toggleFavorite = (id: string) => {
-    setDictionary(
-      dictionary.map((entry) =>
-        entry.id === id ? { ...entry, isFavorite: !entry.isFavorite } : entry
-      )
-    );
+  const toggleFavorite = async (id: string) => {
+    try {
+      // Optimitistic update
+      setDictionary(
+        dictionary.map((entry) =>
+          entry.id === id ? { ...entry, isFavorite: !entry.isFavorite } : entry
+        )
+      );
+      await dictionaryApi.toggleFavorite(id);
+    } catch (error) {
+      // Revert if error
+      setDictionary(
+        dictionary.map((entry) =>
+          entry.id === id ? { ...entry, isFavorite: !entry.isFavorite } : entry
+        )
+      );
+      toast.error(t("お気に入りの更新に失敗しました", "Lỗi cập nhật yêu thích"));
+    }
   };
 
   const getCategoryName = (category: string) => {
@@ -350,11 +136,10 @@ export function DictionaryPage() {
               onClick={() => toggleFavorite(entry.id)}
             >
               <Star
-                className={`w-4 h-4 ${
-                  entry.isFavorite
-                    ? "fill-[#d4af37] text-[#d4af37]"
-                    : "text-gray-400"
-                }`}
+                className={`w-4 h-4 ${entry.isFavorite
+                  ? "fill-[#d4af37] text-[#d4af37]"
+                  : "text-gray-400"
+                  }`}
               />
             </Button>
           </div>

@@ -1,4 +1,4 @@
-const { geminiModel } = require('../config/gemini');
+const { groq } = require('../config/groq');
 
 async function analyzeMessage(noiDung, ngonNguNguoiGui) {
   const tenNgonNguGui = ngonNguNguoiGui === 'vi' ? 'tiếng Việt' : 'tiếng Nhật';
@@ -20,12 +20,18 @@ Trả về đúng format này:
 }`;
 
   try {
-    const result = await geminiModel.generateContent(prompt);
-    const text = result.response.text().trim();
+    const result = await groq.chat.completions.create({
+      messages: [{ role: 'user', content: prompt }],
+      model: 'llama-3.3-70b-versatile',
+      response_format: { type: 'json_object' },
+      temperature: 0.2,
+    });
+    
+    const text = result.choices[0]?.message?.content || '';
     const cleaned = text.replace(/```json|```/g, '').trim();
     return JSON.parse(cleaned);
   } catch (err) {
-    console.error('[aiService] Lỗi Gemini:', err.message);
+    console.error('[aiService] Lỗi Groq:', err.message);
     return { sac_thai: null, tom_tat_y_dinh: null, goi_y: [] };
   }
 }

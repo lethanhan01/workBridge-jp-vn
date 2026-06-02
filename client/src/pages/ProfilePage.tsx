@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -21,28 +21,77 @@ import { Badge } from "../components/ui/badge";
 import { User, Mail, Building, Globe, Camera, Save, Lock, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { useLanguage } from "../utils/contexts/LanguageContext";
+import { userApi } from "../api/userApi";
+import { useAuth } from "../utils/contexts/AuthContext";
 
 export function ProfilePage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const { user } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  
   const [profile, setProfile] = useState({
     name: "田中健太",
     nameEn: "Tanaka Kenta",
     email: "tanaka.kenta@company.com",
-    department: "営業部",
-    departmentEn: "Sales Department",
-    nationality: "japan",
+    department: "",
+    departmentEn: "",
+    nationality: "vi",
     gender: "male",
-    password: "SecurePass123!",
-    position: "課長",
-    positionEn: "Section Manager",
+    password: "",
+    position: "",
+    positionEn: "",
     language: "japanese",
   });
 
-  const handleSave = () => {
-    setIsEditing(false);
-    toast.success(t("プロフィールを更新しました", "Đã cập nhật hồ sơ"));
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        setIsLoading(true);
+        const data = await userApi.getProfile();
+        if (data) {
+          setProfile(prev => ({
+            ...prev,
+            name: data.ten || prev.name,
+            email: data.email || prev.email,
+            nationality: data.ma_ngon_ngu || prev.nationality,
+            password: data.matkhau || prev.password,
+            department: language === 'ja' ? (data.phong_ban_jp || data.phong_ban || "") : (data.phong_ban || ""),
+            position: language === 'ja' ? (data.chuc_vu_jp || data.chuc_vu || "") : (data.chuc_vu || ""),
+          }));
+        }
+      } catch (error: any) {
+        toast.error("Không thể tải thông tin người dùng từ DB");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    if (user) {
+      fetchProfile();
+    }
+  }, [user, language]);
+
+  const handleSave = async () => {
+    try {
+      setIsLoading(true);
+      await userApi.updateProfile({
+        ten: profile.name,
+        email: profile.email,
+        ma_ngon_ngu: profile.nationality,
+        matkhau: profile.password,
+        phong_ban: profile.department,
+        chuc_vu: profile.position,
+        input_language: language
+      });
+      setIsEditing(false);
+      toast.success(t("プロフィールを更新しました", "Đã cập nhật hồ sơ"));
+    } catch (error: any) {
+      toast.error(error.message || "Cập nhật hồ sơ thất bại");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -69,6 +118,7 @@ export function ProfilePage() {
               <Button
                 variant={isEditing ? "outline" : "default"}
                 onClick={() => setIsEditing(!isEditing)}
+                disabled={isLoading}
               >
                 {isEditing ? t("キャンセル", "Hủy") : t("編集", "Chỉnh sửa")}
               </Button>
@@ -81,7 +131,7 @@ export function ProfilePage() {
                 <Avatar className="w-24 h-24">
                   <AvatarImage src="" />
                   <AvatarFallback className="text-2xl">
-                    {profile.name.charAt(0)}
+                    {profile.name.charAt(0) || "U"}
                   </AvatarFallback>
                 </Avatar>
                 {isEditing && (
@@ -98,13 +148,13 @@ export function ProfilePage() {
                 <p className="text-gray-600">{profile.nameEn}</p>
                 <Badge
                   className={
-                    profile.nationality === "japan"
+                    profile.nationality === "ja"
                       ? "bg-red-50 text-red-700 border-red-200 mt-2"
                       : "bg-yellow-50 text-yellow-700 border-yellow-200 mt-2"
                   }
                   variant="outline"
                 >
-                  {profile.nationality === "japan" ? "🇯🇵 日本" : "🇻🇳 ベトナム"}
+                  {profile.nationality === "ja" ? "🇯🇵 日本" : "🇻🇳 ベトナム"}
                 </Badge>
               </div>
             </div>
@@ -121,7 +171,7 @@ export function ProfilePage() {
                     onChange={(e) =>
                       setProfile({ ...profile, name: e.target.value })
                     }
-                    disabled={!isEditing}
+                    disabled={!isEditing || isLoading}
                     className="pl-10"
                   />
                 </div>
@@ -137,7 +187,7 @@ export function ProfilePage() {
                     onChange={(e) =>
                       setProfile({ ...profile, nameEn: e.target.value })
                     }
-                    disabled={!isEditing}
+                    disabled={!isEditing || isLoading}
                     className="pl-10"
                   />
                 </div>
@@ -154,7 +204,7 @@ export function ProfilePage() {
                     onChange={(e) =>
                       setProfile({ ...profile, email: e.target.value })
                     }
-                    disabled={!isEditing}
+                    disabled={!isEditing || isLoading}
                     className="pl-10"
                   />
                 </div>
@@ -167,14 +217,14 @@ export function ProfilePage() {
                   onValueChange={(value) =>
                     setProfile({ ...profile, nationality: value })
                   }
-                  disabled={!isEditing}
+                  disabled={!isEditing || isLoading}
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="japan">{t("日本", "Nhật Bản")}</SelectItem>
-                    <SelectItem value="vietnam">{t("ベトナム", "Việt Nam")}</SelectItem>
+                    <SelectItem value="ja">{t("日本", "Nhật Bản")}</SelectItem>
+                    <SelectItem value="vi">{t("ベトナム", "Việt Nam")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -186,7 +236,7 @@ export function ProfilePage() {
                   onValueChange={(value) =>
                     setProfile({ ...profile, gender: value })
                   }
-                  disabled={!isEditing}
+                  disabled={!isEditing || isLoading}
                 >
                   <SelectTrigger>
                     <SelectValue>
@@ -207,7 +257,7 @@ export function ProfilePage() {
 
               <div className="space-y-2">
                 <Label htmlFor="department">
-                  {t("部署（日本語・ベトナム語）", "Phòng ban")}
+                  {t("部署", "Phòng ban")}
                 </Label>
                 <div className="relative">
                   <Building className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -217,25 +267,7 @@ export function ProfilePage() {
                     onChange={(e) =>
                       setProfile({ ...profile, department: e.target.value })
                     }
-                    disabled={!isEditing}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="departmentEn">
-                  {t("部署（英語）", "Phòng ban (Tiếng Anh)")}
-                </Label>
-                <div className="relative">
-                  <Building className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <Input
-                    id="departmentEn"
-                    value={profile.departmentEn}
-                    onChange={(e) =>
-                      setProfile({ ...profile, departmentEn: e.target.value })
-                    }
-                    disabled={!isEditing}
+                    disabled={!isEditing || isLoading}
                     className="pl-10"
                   />
                 </div>
@@ -249,7 +281,7 @@ export function ProfilePage() {
                   onChange={(e) =>
                     setProfile({ ...profile, position: e.target.value })
                   }
-                  disabled={!isEditing}
+                  disabled={!isEditing || isLoading}
                 />
               </div>
 
@@ -262,7 +294,7 @@ export function ProfilePage() {
                   onValueChange={(value) =>
                     setProfile({ ...profile, language: value })
                   }
-                  disabled={!isEditing}
+                  disabled={!isEditing || isLoading}
                 >
                   <SelectTrigger>
                     <Globe className="w-4 h-4 mr-2" />
@@ -289,13 +321,14 @@ export function ProfilePage() {
                     onChange={(e) =>
                       setProfile({ ...profile, password: e.target.value })
                     }
-                    disabled={!isEditing}
+                    disabled={!isEditing || isLoading}
                     className="pl-10 pr-10"
                   />
                   <button
                     type="button"
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                     onClick={() => setShowPassword(!showPassword)}
+                    disabled={!isEditing || isLoading}
                   >
                     {showPassword ? (
                       <EyeOff className="w-4 h-4" />
@@ -309,12 +342,12 @@ export function ProfilePage() {
 
             {isEditing && (
               <div className="flex justify-end gap-2 pt-4 border-t">
-                <Button variant="outline" onClick={() => setIsEditing(false)}>
+                <Button variant="outline" onClick={() => setIsEditing(false)} disabled={isLoading}>
                   {t("キャンセル", "Hủy")}
                 </Button>
-                <Button onClick={handleSave}>
+                <Button onClick={handleSave} disabled={isLoading}>
                   <Save className="w-4 h-4 mr-2" />
-                  {t("保存", "Lưu")}
+                  {isLoading ? "Đang lưu..." : t("保存", "Lưu")}
                 </Button>
               </div>
             )}

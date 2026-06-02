@@ -494,7 +494,7 @@ export function ChatPage() {
     if (!contactId || !user) return;
 
     // Connect to socket and join room
-    socketService.connect();
+    socketService.connect(user.id);
     socketService.joinRoom(contactId);
 
     // Listen for new messages

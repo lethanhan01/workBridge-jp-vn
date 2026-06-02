@@ -19,10 +19,10 @@ export function LoginPage() {
     e.preventDefault();
     try {
       // Call login function from AuthContext
-      await login(email, password);
+      const user = await login(email, password);
       
       // Redirect based on role
-      if (email.includes("admin")) {
+      if (user.role === "admin") {
         navigate("/app/accounts");
       } else {
         navigate("/app");

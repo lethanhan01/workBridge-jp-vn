@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router";
+import { userApi } from "../api/userApi";
 import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
@@ -27,21 +28,28 @@ import {
   SelectValue,
 } from "../components/ui/select";
 import { Search, UserPlus, Filter, Eye } from "lucide-react";
+import { toast } from "sonner";
 import { useLanguage } from "../utils/contexts/LanguageContext";
 import {
   AddAccountDialog,
   type NewAccountInput,
 } from "../components/account/AddAccountDialog";
+import { formatDistanceToNow } from "date-fns";
+import { vi, ja } from "date-fns/locale";
 
 interface Account {
   id: string;
   name: string;
   email: string;
   department: string;
+  department_jp?: string;
   nationality: "japan" | "vietnam";
   position: string;
+  position_jp?: string;
   status: "active" | "inactive";
   lastActive: string;
+  isOnline?: boolean;
+  lastActiveDate?: string;
 }
 
 const mockAccounts: Account[] = [
@@ -128,18 +136,53 @@ const mockAccounts: Account[] = [
 ];
 
 export function AccountListPage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [searchQuery, setSearchQuery] = useState("");
   const [nationalityFilter, setNationalityFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [accounts, setAccounts] = useState(mockAccounts);
+  const [accounts, setAccounts] = useState<Account[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 60000); // Cập nhật mỗi phút
+    return () => clearInterval(timer);
+  }, []);
+
+  const fetchUsers = async () => {
+    try {
+      const data = await userApi.getAllUsers();
+      const formattedAccounts: Account[] = data.map((u: any) => ({
+        id: u.ma_nguoi_dung,
+        name: u.ten || u.ten_dang_nhap || "No Name",
+        email: u.email,
+        department: u.phong_ban || "",
+        department_jp: u.phong_ban_jp || "",
+        nationality: u.ma_ngon_ngu === "ja" ? "japan" : "vietnam",
+        position: u.chuc_vu || "",
+        position_jp: u.chuc_vu_jp || "",
+        status: "active",
+        lastActive: "",
+        isOnline: u.trang_thai_online || false,
+        lastActiveDate: u.lan_cuoi_hoat_dong || null,
+      }));
+      setAccounts(formattedAccounts);
+    } catch (err) {
+      console.error("Failed to load accounts", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
 
   const filteredAccounts = accounts.filter((account) => {
+    const searchDept = language === 'ja' ? (account.department_jp || account.department) : account.department;
+    
     const matchesSearch =
       account.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       account.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      account.department.toLowerCase().includes(searchQuery.toLowerCase());
+      searchDept.toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchesNationality =
       nationalityFilter === "all" || account.nationality === nationalityFilter;
@@ -150,20 +193,24 @@ export function AccountListPage() {
     return matchesSearch && matchesNationality && matchesStatus;
   });
 
-  const handleAddAccount = (newAccount: NewAccountInput) => {
-    setAccounts((currentAccounts) => [
-      {
-        id: `${Date.now()}`,
-        name: newAccount.name,
+  const handleAddAccount = async (newAccount: NewAccountInput) => {
+    try {
+      await userApi.createUser({
+        ten: newAccount.name,
         email: newAccount.email,
-        department: newAccount.department,
-        nationality: newAccount.nationality,
-        position: newAccount.position,
-        status: "active",
-        lastActive: t("たった今", "Vừa xong"),
-      },
-      ...currentAccounts,
-    ]);
+        matkhau: newAccount.password,
+        ma_ngon_ngu: newAccount.nationality === "japan" ? "ja" : "vi",
+        phong_ban: newAccount.department,
+        chuc_vu: newAccount.position,
+        input_language: language
+      });
+      toast.success(t("アカウントが正常に作成されました", "Tạo tài khoản thành công"));
+      setIsAddDialogOpen(false);
+      fetchUsers();
+    } catch (error: any) {
+      console.error("Lỗi khi tạo tài khoản:", error);
+      toast.error(error.message || t("エラーが発生しました", "Đã xảy ra lỗi"));
+    }
   };
 
   return (
@@ -242,7 +289,7 @@ export function AccountListPage() {
 
             <div className="flex items-center gap-4 text-sm text-gray-600">
               <span>
-                {t("表示中", "Hiển thị")}: {filteredAccounts.length} / {mockAccounts.length} {t("件", "tài khoản")}
+                {t("表示中", "Hiển thị")}: {filteredAccounts.length} / {accounts.length} {t("件", "tài khoản")}
               </span>
             </div>
           </CardContent>
@@ -292,8 +339,8 @@ export function AccountListPage() {
                             </div>
                           </div>
                         </TableCell>
-                        <TableCell>{account.department}</TableCell>
-                        <TableCell>{account.position}</TableCell>
+                        <TableCell>{language === 'ja' ? (account.department_jp || account.department) : account.department}</TableCell>
+                        <TableCell>{language === 'ja' ? (account.position_jp || account.position) : account.position}</TableCell>
                         <TableCell>
                           <Badge
                             variant="outline"
@@ -309,25 +356,28 @@ export function AccountListPage() {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <Badge
-                            variant={
-                              account.status === "active"
-                                ? "default"
-                                : "secondary"
-                            }
-                            className={
-                              account.status === "active"
-                                ? "bg-green-100 text-green-700"
-                                : "bg-gray-100 text-gray-700"
-                            }
-                          >
-                            {account.status === "active"
-                              ? t("アクティブ", "Đang hoạt động")
-                              : t("非アクティブ", "Không hoạt động")}
-                          </Badge>
+                          {account.isOnline ? (
+                            <Badge
+                              variant="outline"
+                              className="bg-green-50 text-green-700 border-green-200"
+                            >
+                              {t("オンライン", "Đang hoạt động")}
+                            </Badge>
+                          ) : (
+                            <Badge
+                              variant="outline"
+                              className="bg-gray-50 text-gray-700 border-gray-200"
+                            >
+                              {t("オフライン", "Không hoạt động")}
+                            </Badge>
+                          )}
                         </TableCell>
-                        <TableCell className="text-sm text-gray-500">
-                          {account.lastActive}
+                        <TableCell className="text-gray-500">
+                          {account.lastActiveDate ? (
+                            formatDistanceToNow(new Date(account.lastActiveDate), { locale: language === "ja" ? ja : vi })
+                          ) : (
+                            t("不明", "Chưa rõ")
+                          )}
                         </TableCell>
                         <TableCell className="text-right">
                           <Button

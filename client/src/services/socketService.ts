@@ -7,10 +7,11 @@ class SocketService {
   private listeners: ((message: any) => void)[] = [];
   private aiReadyListeners: ((message: any) => void)[] = [];
 
-  connect() {
+  connect(userId?: string) {
     if (this.socket?.connected) return;
 
-    this.socket = io(SOCKET_URL);
+    const url = userId ? `${SOCKET_URL}?userId=${userId}` : SOCKET_URL;
+    this.socket = io(url);
 
     this.socket.on('connect', () => {
       console.log('Connected to socket server');

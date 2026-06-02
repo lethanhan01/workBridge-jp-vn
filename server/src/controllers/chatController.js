@@ -5,8 +5,48 @@ const supabase = require('../config/supabase');
 const getConversations = async (req, res) => {
   try {
     const userId = req.user.id;
-    const data = await cuocHoiThoai.getByUserId(userId);
-    res.json(data);
+    const conversations = await cuocHoiThoai.getByUserId(userId);
+    
+    const enhancedConversations = await Promise.all(
+      conversations.map(async (conv) => {
+        // Lấy tin nhắn mới nhất
+        const { data: lastMessageData, error: msgError } = await supabase
+          .from('tinnhan')
+          .select(`
+            noi_dung, 
+            time, 
+            bandich ( noi_dung_da_dich )
+          `)
+          .eq('ma_cuoc_hoi_thoai', conv.ma_cuoc_hoi_thoai)
+          .order('time', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (msgError) console.error('Lỗi lấy tin nhắn mới nhất:', msgError);
+
+        // Lấy số lượng tin nhắn chưa đọc
+        const { count: unreadCount } = await supabase
+          .from('tinnhan')
+          .select('ma_tin_nhan', { count: 'exact' })
+          .eq('ma_cuoc_hoi_thoai', conv.ma_cuoc_hoi_thoai)
+          .neq('ma_nguoi_gui', userId)
+          .eq('trang_thai', 'sent');
+
+        const translatedText = lastMessageData?.bandich?.[0]?.noi_dung_da_dich || lastMessageData?.ban_dich?.[0]?.noi_dung_da_dich;
+        
+        return {
+          ...conv,
+          lastMessage: lastMessageData ? (translatedText || lastMessageData.noi_dung) : null,
+          lastMessageTime: lastMessageData ? lastMessageData.time : conv.ngay_tao,
+          unreadCount: unreadCount || 0
+        };
+      })
+    );
+
+    // Sắp xếp hội thoại có tin nhắn mới nhất lên đầu
+    enhancedConversations.sort((a, b) => new Date(b.lastMessageTime) - new Date(a.lastMessageTime));
+
+    res.json(enhancedConversations);
   } catch (err) {
     console.error('Lỗi lấy danh sách hội thoại:', err);
     res.status(500).json({ message: 'Lỗi máy chủ nội bộ' });
@@ -16,6 +56,16 @@ const getConversations = async (req, res) => {
 const getMessages = async (req, res) => {
   try {
     const { roomId } = req.params;
+    const userId = req.user.id;
+    
+    // Cập nhật trạng thái tin nhắn thành 'read' (đã đọc)
+    await supabase
+      .from('tinnhan')
+      .update({ trang_thai: 'read' })
+      .eq('ma_cuoc_hoi_thoai', roomId)
+      .neq('ma_nguoi_gui', userId)
+      .eq('trang_thai', 'sent');
+
     const data = await tinNhan.getByConversationId(roomId);
     res.json(data);
   } catch (err) {

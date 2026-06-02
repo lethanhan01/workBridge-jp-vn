@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const authService = require('../services/authService');
+const VaiTro = require('../models/vaiTro');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key_here';
 
@@ -10,7 +11,14 @@ const login = async (req, res) => {
 
     const user = await authService.loginUser(identifier, password);
 
-    const role = (user.email && user.email.includes('admin')) || (user.ten_dang_nhap && user.ten_dang_nhap.includes('admin')) ? 'admin' : 'user';
+    // Lấy role từ DB
+    let role = 'user';
+    if (user.ma_vai_tro) {
+      const roleData = await VaiTro.findOne({ ma_vai_tro: user.ma_vai_tro });
+      if (roleData && roleData.ten_vai_tro && roleData.ten_vai_tro.trim() === 'admin') {
+        role = 'admin';
+      }
+    }
 
     // Tạo JWT token
     const token = jwt.sign(
@@ -28,7 +36,9 @@ const login = async (req, res) => {
         name: user.ten || user.ten_dang_nhap,
         email: user.email,
         ten_dang_nhap: user.ten_dang_nhap,
-        role: role
+        role: role,
+        phong_ban: user.phong_ban,
+        chuc_vu: user.chuc_vu
       }
     });
   } catch (err) {
