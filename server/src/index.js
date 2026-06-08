@@ -40,6 +40,23 @@ app.use('/api/users', userRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/dictionary', dictionaryRoutes);
 
+// Reset tất cả trạng thái online về false khi server khởi động lại
+const resetOnlineStatus = async () => {
+  try {
+    const { error } = await supabase
+      .from('nguoi_dung')
+      .update({ trang_thai_online: false })
+      .eq('trang_thai_online', true);
+    
+    if (error) throw error;
+    console.log('Đã reset trạng thái online của tất cả users về false');
+  } catch (err) {
+    console.error('Lỗi khi reset trạng thái online:', err);
+  }
+};
+
+resetOnlineStatus();
+
 io.on('connection', async (socket) => {
   const userId = socket.handshake.query.userId;
   console.log('A user connected:', socket.id, 'UserId:', userId);

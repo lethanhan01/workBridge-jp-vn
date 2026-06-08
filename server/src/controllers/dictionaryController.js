@@ -14,17 +14,31 @@ const dictionaryController = {
       }
 
       // Format dữ liệu khớp với Interface DictionaryEntry ở Frontend
-      const formattedWords = allWords.map(word => ({
-        id: word.ma_tu,
-        termJp: word.thuat_ngu_tieng_nhat || '',
-        termVn: word.thuat_ngu_tieng_viet || '',
-        category: word.chuyen_nganh || 'Khác',
-        definitionJp: word.giai_thich_tieng_nhat || '',
-        definitionVn: word.giai_thich_ngu_tieng_viet || '',
-        exampleJp: word.vi_du_tieng_nhat || '',
-        exampleVn: word.vi_du_tieng_viet || '',
-        isFavorite: favoriteWordIds.has(word.ma_tu)
-      }));
+      // Filter out empty rows where both thuat_ngu_tieng_nhat and thuat_ngu_tieng_viet are null or empty
+      const validWords = allWords.filter(word => word.thuat_ngu_tieng_nhat || word.thuat_ngu_tieng_viet);
+
+      const formattedWords = validWords.map(word => {
+        let categoryName = 'Khác';
+        if (word.chuyen_nganh && word.chuyen_nganh.ten_chuyen_nganh_jp && word.chuyen_nganh.ten_chuyen_nganh_vn) {
+          categoryName = `${word.chuyen_nganh.ten_chuyen_nganh_jp} / ${word.chuyen_nganh.ten_chuyen_nganh_vn}`;
+        } else if (word.chuyen_nganh && word.chuyen_nganh.ten_chuyen_nganh_vn) {
+          categoryName = word.chuyen_nganh.ten_chuyen_nganh_vn;
+        } else if (typeof word.chuyen_nganh === 'string') {
+          categoryName = word.chuyen_nganh; // Fallback in case of raw string
+        }
+
+        return {
+          id: word.ma_tu,
+          termJp: word.thuat_ngu_tieng_nhat || '',
+          termVn: word.thuat_ngu_tieng_viet || '',
+          category: categoryName,
+          definitionJp: word.giai_thich_tieng_nhat || '',
+          definitionVn: word.giai_thich_ngu_tieng_viet || '',
+          exampleJp: word.vi_du_tieng_nhat || '',
+          exampleVn: word.vi_du_tieng_viet || '',
+          isFavorite: favoriteWordIds.has(word.ma_tu)
+        };
+      });
 
       res.json(formattedWords);
     } catch (error) {

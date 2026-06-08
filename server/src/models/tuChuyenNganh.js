@@ -7,11 +7,20 @@ class TuChuyenNganh extends BaseModel {
   }
 
   async getAll() {
-    return await this.findAll();
+    const { data, error } = await supabase
+      .from('tu_chuyen_nganh')
+      .select('*, chuyen_nganh(*)');
+    if (error) throw error;
+    return data;
   }
 
-  async getByChuyenNganh(chuyenNganh) {
-    return await this.findAll({ chuyen_nganh: chuyenNganh });
+  async getByChuyenNganh(maChuyenNganh) {
+    const { data, error } = await supabase
+      .from('tu_chuyen_nganh')
+      .select('*, chuyen_nganh(*)')
+      .eq('chuyen_nganh', maChuyenNganh);
+    if (error) throw error;
+    return data;
   }
 
   // Lấy từ yêu thích của 1 người dùng
@@ -20,7 +29,7 @@ class TuChuyenNganh extends BaseModel {
       .from('nguoi_dung_yeu_thich_tu')
       .select(`
         ma_tu,
-        tu_chuyen_nganh (*)
+        tu_chuyen_nganh (*, chuyen_nganh(*))
       `)
       .eq('ma_nguoi_dung', maNguoiDung);
 

@@ -472,6 +472,17 @@ export function ChatPage() {
       score: s.muc_do_phu_hop,
     })) || [];
 
+    const parseJsonSafely = (str: any) => {
+      if (typeof str === 'string' && str.trim().startsWith('{')) {
+        try {
+          return JSON.parse(str);
+        } catch (e) {
+          return str;
+        }
+      }
+      return str;
+    };
+
     return {
       id: msg.ma_tin_nhan || Date.now().toString(),
       text: msg.noi_dung,
@@ -481,8 +492,8 @@ export function ChatPage() {
         hour: "2-digit",
         minute: "2-digit",
       }),
-      intent: analysis?.tom_tat_y_dinh,
-      tone: analysis?.sac_thai,
+      intent: parseJsonSafely(analysis?.tom_tat_y_dinh),
+      context: parseJsonSafely(analysis?.sac_thai) || parseJsonSafely(msg.ngu_canh),
       suggestions: suggestions.length > 0 ? suggestions : undefined,
       analysisReady: !!analysis, // true if analysis exists
       senderNationality: msg.ma_nguoi_gui === user?.id ? (user?.nationality || "vietnam") : "japan",
@@ -517,7 +528,7 @@ export function ChatPage() {
           return {
             ...m,
             intent: aiUpdate.tom_tat_y_dinh,
-            tone: aiUpdate.sac_thai,
+            context: aiUpdate.ngu_canh,
             suggestions: suggestions.length > 0 ? suggestions : undefined,
             analysisReady: true,
           };
@@ -735,12 +746,10 @@ export function ChatPage() {
               </div>
 
               <Button
-                variant={showTranslation ? "default" : "outline"}
+                variant="default"
                 size="sm"
                 onClick={() => setShowTranslation(!showTranslation)}
-                className={showTranslation 
-                  ? "bg-[#4a9d9c] hover:bg-[#3d8887] text-white" 
-                  : "border-[#4a9d9c] text-[#4a9d9c] hover:bg-gray-50 bg-transparent"}
+                className="bg-[#4a9d9c] hover:bg-[#3d8887] text-white"
               >
                 <Languages className="w-4 h-4 mr-2" />
                 {t("翻訳", "Dịch")}
@@ -776,12 +785,10 @@ export function ChatPage() {
 
 
               <Button
-                variant={showTranslation ? "default" : "outline"}
+                variant="default"
                 size="sm"
                 onClick={() => setShowTranslation(!showTranslation)}
-                className={showTranslation 
-                  ? "bg-[#4a9d9c] hover:bg-[#3d8887] text-white" 
-                  : "border-[#4a9d9c] text-[#4a9d9c] hover:bg-gray-50 bg-transparent"}
+                className="bg-[#4a9d9c] hover:bg-[#3d8887] text-white"
               >
                 <Languages className="w-4 h-4 mr-2" />
                 {t("翻訳", "Dịch")}
@@ -826,24 +833,7 @@ export function ChatPage() {
                     </p>
                   )}
 
-                  {/* Tone badge */}
-                  {message.tone && (
-                    <div className="mt-2">
-                      <Badge
-                        className={`text-xs ${
-                          message.sender === "me"
-                            ? "bg-blue-400 text-blue-900"
-                            : "bg-gray-200 text-gray-700"
-                        }`}
-                      >
-                        {message.tone === "trang trọng"
-                          ? "正式 / Trang trọng"
-                          : message.tone === "thân mật"
-                          ? "親密 / Thân mật"
-                          : "中立 / Trung lập"}
-                      </Badge>
-                    </div>
-                  )}
+
 
                   {/* AI Analysis Loading Indicator */}
                   {!message.analysisReady && (

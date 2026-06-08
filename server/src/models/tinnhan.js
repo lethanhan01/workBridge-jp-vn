@@ -26,6 +26,22 @@ class TinNhan extends BaseModel {
     return data;
   }
 
+  async getRecentMessages(maCuocHoiThoai, limit = 10) {
+    const { data, error } = await supabase
+      .from('tinnhan')
+      .select('noi_dung, time, ma_nguoi_gui')
+      .eq('ma_cuoc_hoi_thoai', maCuocHoiThoai)
+      .order('time', { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      console.error('[tinnhan.getRecentMessages] Error:', error);
+      return [];
+    }
+    // Reverse to chronological order
+    return data.reverse();
+  }
+
   async sendMessage({ maNguoiGui, maCuocHoiThoai, noiDung }) {
     return await this.create({
       ma_nguoi_gui: maNguoiGui,

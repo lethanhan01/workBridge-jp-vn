@@ -123,7 +123,7 @@ export function AccountDetailPage() {
           department_jp: data.phong_ban_jp || "",
           nationality: data.ma_ngon_ngu === "ja" ? "japan" : "vietnam",
           gender: "other",
-          password: "••••••••", // Không lưu trữ mật khẩu rõ trên frontend
+          password: data.matkhau || "••••••••", 
           position: data.chuc_vu || "",
           position_jp: data.chuc_vu_jp || "",
           status: "active",

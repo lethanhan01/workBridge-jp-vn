@@ -6,7 +6,7 @@ import {
   DialogDescription,
 } from "../ui/dialog";
 import { Badge } from "../ui/badge";
-import { Lightbulb, MessageCircle, AlertCircle } from "lucide-react";
+import { Lightbulb, MessageCircle, Info } from "lucide-react";
 import { useLanguage } from "../../utils/contexts/LanguageContext";
 
 interface Suggestion {
@@ -21,8 +21,8 @@ interface Message {
   translatedText: string;
   sender: "me" | "other";
   timestamp: string;
-  intent?: string;
-  context?: string;
+  intent?: any;
+  context?: any;
   culturalNotes?: string;
   suggestions?: Suggestion[];
 }
@@ -58,6 +58,13 @@ export function MessageIntentDialog({
   const suggestions = (message.suggestions && message.suggestions.length > 0)
     ? message.suggestions.map(s => ({ ja: s.jpText, vi: s.viText }))
     : defaultSuggestions;
+
+  const getBilingualText = (field: any) => {
+    if (!field) return "";
+    if (typeof field === 'string') return field;
+    if (language === 'ja') return field.ja || field.vi || "";
+    return field.vi || field.ja || "";
+  };
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
@@ -99,7 +106,7 @@ export function MessageIntentDialog({
                 <h3 className="text-sm">{t("意図", "Ý định")}</h3>
               </div>
               <div className="p-3 bg-[#fdf8e8] border border-[#e5c867] rounded-lg">
-                <p className="text-sm text-[#7d6620]">{message.intent}</p>
+                <p className="text-sm text-[#7d6620]">{getBilingualText(message.intent)}</p>
               </div>
             </div>
           )}
@@ -108,11 +115,11 @@ export function MessageIntentDialog({
           {message.context && (
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <AlertCircle className="w-4 h-4 text-[#4a9d9c]" />
+                <Info className="w-4 h-4 text-[#4a9d9c]" />
                 <h3 className="text-sm">{t("コンテキスト", "Ngữ cảnh")}</h3>
               </div>
               <div className="p-3 bg-[#e8f5f5] border border-[#6bb5b4] rounded-lg">
-                <p className="text-sm text-[#2d5958]">{message.context}</p>
+                <p className="text-sm text-[#2d5958]">{getBilingualText(message.context)}</p>
               </div>
             </div>
           )}
@@ -128,14 +135,14 @@ export function MessageIntentDialog({
                   key={index}
                   onClick={() => {
                     if (onSelectSuggestion) {
-                      onSelectSuggestion(language === "ja" ? suggestion.ja : suggestion.vi);
+                      onSelectSuggestion(language === "ja" ? (suggestion.ja || suggestion.vi) : (suggestion.vi || suggestion.ja));
                     }
                     onClose();
                   }}
                   className="w-full text-left p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   <p className="text-sm">
-                    {language === "ja" ? suggestion.ja : suggestion.vi}
+                    {language === "ja" ? (suggestion.ja || suggestion.vi) : (suggestion.vi || suggestion.ja)}
                   </p>
                 </button>
               ))}

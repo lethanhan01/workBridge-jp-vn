@@ -42,26 +42,34 @@ async function xuLyTinNhanMoi({ noi_dung, ma_cuoc_hoi_thoai, ma_nguoi_gui }, io)
     goi_y: [],
   });
 
-  // 3. AI chạy trong nền (phân tích sắc thái, ý định, gợi ý), broadcast lần 2 khi xong
-  _xuLyAI(tinNhanMoi.ma_tin_nhan, noi_dung, ngonNguGoc, ma_cuoc_hoi_thoai, io)
+  // 3. AI chạy trong nền (phân tích sắc thái, ý định, gợi ý)
+  // Lấy lịch sử trò chuyện (10 tin nhắn gần nhất)
+  const recentMessages = await tinNhan.getRecentMessages(ma_cuoc_hoi_thoai, 10);
+  const chatHistory = recentMessages.map(m => `[${m.time}] ${m.ma_nguoi_gui === ma_nguoi_gui ? 'Người gửi' : 'Người nhận'}: ${m.noi_dung}`).join('\n');
+
+  _xuLyAI(tinNhanMoi.ma_tin_nhan, noi_dung, ngonNguGoc, ma_cuoc_hoi_thoai, io, chatHistory)
     .catch((err) => console.error('[messageService] Lỗi AI:', err.message));
 }
 
-async function _xuLyAI(maTinNhan, noiDung, ngonNguGoc, maCuocHoiThoai, io) {
-  const aiData = await analyzeMessage(noiDung, ngonNguGoc);
+async function _xuLyAI(maTinNhan, noiDung, ngonNguGoc, maCuocHoiThoai, io, chatHistory) {
+  const aiData = await analyzeMessage(noiDung, ngonNguGoc, chatHistory);
 
-  if (aiData.sac_thai || aiData.tom_tat_y_dinh || (aiData.goi_y && aiData.goi_y.length > 0)) {
+  if (aiData.ngu_canh_vi || aiData.tom_tat_y_dinh_vi || (aiData.goi_y && aiData.goi_y.length > 0)) {
+    // Lưu dưới dạng JSON vào các trường TEXT để hỗ trợ song ngữ
+    const sacThaiJson = JSON.stringify({ vi: aiData.ngu_canh_vi || "", ja: aiData.ngu_canh_ja || "" });
+    const yDinhJson = JSON.stringify({ vi: aiData.tom_tat_y_dinh_vi || "", ja: aiData.tom_tat_y_dinh_ja || "" });
+
     await phanTichYNghia.createWithGoiY({
       maTinNhan,
-      sacThai: aiData.sac_thai,
-      tomTatYDinh: aiData.tom_tat_y_dinh,
+      sacThai: sacThaiJson,
+      tomTatYDinh: yDinhJson,
       danhSachGoiY: aiData.goi_y,
     });
     
     io.to(maCuocHoiThoai).emit('message_ai_ready', {
       ma_tin_nhan: maTinNhan,
-      sac_thai: aiData.sac_thai,
-      tom_tat_y_dinh: aiData.tom_tat_y_dinh,
+      ngu_canh: { vi: aiData.ngu_canh_vi, ja: aiData.ngu_canh_ja },
+      tom_tat_y_dinh: { vi: aiData.tom_tat_y_dinh_vi, ja: aiData.tom_tat_y_dinh_ja },
       goi_y: aiData.goi_y,
     });
   }

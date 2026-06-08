@@ -87,7 +87,7 @@ const getUserById = async (req, res) => {
     const userId = req.params.id;
     const { data, error } = await supabase
       .from('nguoi_dung')
-      .select('ma_nguoi_dung, ten, email, ten_dang_nhap, ma_ngon_ngu, phong_ban, chuc_vu, phong_ban_jp, chuc_vu_jp, trang_thai_online, lan_cuoi_hoat_dong, vai_tro(ten_vai_tro)')
+      .select('ma_nguoi_dung, ten, email, ten_dang_nhap, ma_ngon_ngu, matkhau, phong_ban, chuc_vu, phong_ban_jp, chuc_vu_jp, trang_thai_online, lan_cuoi_hoat_dong, vai_tro(ten_vai_tro)')
       .eq('ma_nguoi_dung', userId)
       .single();
 
